@@ -33,7 +33,18 @@
                                         </div>
                                     </div>
                                 </div>
-                                {# Links de perfil/sair: adicionar quando as rotas de autenticação existirem (logout deve ser POST com {% csrf_token %}). #}
+                                <div class="dropdown-inner">
+                                    <form method="post" action="{% url 'users:logout' %}">
+                                        {% csrf_token %}
+                                        <ul class="link-list">
+                                            <li>
+                                                <button type="submit" class="gohub-btn-reset">
+                                                    <em class="icon ni ni-signout" aria-hidden="true"></em><span>Sair</span>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </form>
+                                </div>
                             </div>
                         </li>
                     </ul>

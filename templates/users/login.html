@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% comment %}
+    Tela de login (estrutura de templates/exemplos/pages/auths/auth-login-v2.html).
+    Não usa layouts/painel.html: a tela é anterior à autenticação e não tem menus.
+{% endcomment %}
+
+{% block title %}Entrar | GoHub{% endblock %}
+{% block description %}Acesso à área restrita do GoHub.{% endblock %}
+{% block meta_extra %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block body_class %}nk-body bg-white npc-general pg-auth{% endblock %}
+
+{% block body %}
+    <div class="nk-app-root">
+        <div class="nk-main">
+            <div class="nk-wrap nk-wrap-nosidebar">
+                <main id="conteudo" class="nk-content" tabindex="-1">
+                    <div class="nk-block nk-block-middle nk-auth-body wide-xs">
+                        <p class="brand-logo pb-4 text-center fs-3 fw-bold text-primary">GoHub</p>
+                        <div class="card card-bordered">
+                            <div class="card-inner card-inner-lg">
+                                <div class="nk-block-head">
+                                    <div class="nk-block-head-content">
+                                        <h1 class="nk-block-title h4">Entrar</h1>
+                                        <div class="nk-block-des">
+                                            <p>Acesse a área restrita com seu nome de usuário e senha.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% include "partials/_mensagens.html" %}
+
+                                {% if form.non_field_errors %}
+                                    <div class="alert alert-danger" role="alert" id="login-erros">
+                                        {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <form method="post" action="{% url 'users:login' %}" novalidate>
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <div class="form-label-group">
+                                            <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                                        </div>
+                                        <div class="form-control-wrap">
+                                            <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
+                                                   class="form-control form-control-lg{% if form.username.errors %} is-invalid{% endif %}"
+                                                   value="{{ form.username.value|default:'' }}" maxlength="50"
+                                                   autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus
+                                                   {% if form.username.errors %}aria-invalid="true" aria-describedby="erro-username"{% elif form.non_field_errors %}aria-describedby="login-erros"{% endif %}>
+                                            {% if form.username.errors %}
+                                                <div class="invalid-feedback" id="erro-username">{{ form.username.errors|join:" " }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-label-group">
+                                            <label class="form-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                                        </div>
+                                        <div class="form-control-wrap">
+                                            <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
+                                                   class="form-control form-control-lg{% if form.password.errors %} is-invalid{% endif %}"
+                                                   autocomplete="current-password" required
+                                                   {% if form.password.errors %}aria-invalid="true" aria-describedby="erro-password"{% endif %}>
+                                            {% if form.password.errors %}
+                                                <div class="invalid-feedback" id="erro-password">{{ form.password.errors|join:" " }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                                    <div class="form-group">
+                                        <button type="submit" class="btn btn-lg btn-primary btn-block">Entrar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                <footer class="nk-footer nk-auth-footer-full">
+                    <div class="container wide-lg">
+                        <p class="nk-block-content text-center text-soft mb-0">&copy; {% now "Y" %} GoHub</p>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -33,7 +33,7 @@ Não há linter, formatter, pytest nem CI. Não invente nem instale ferramentas;
 ## Armadilhas
 - Sem `SECRET_KEY` no ambiente, qualquer `manage.py` falha no import (`ImproperlyConfigured`).
 - O entrypoint NÃO roda migrate/collectstatic; migrations são aplicadas manualmente (skill `migration`).
-- `CompressedManifestStaticFilesStorage`: com DEBUG=False, `{% static %}` de arquivo inexistente → erro 500.
+- Estáticos: `setup.storage.ManifestStaticFilesStorage` (`manifest_strict = False`, por causa do Jazzmin): com DEBUG=False, `{% static %}` de arquivo inexistente NÃO falha, gera link quebrado; confira o caminho.
 - Imagem: `pip install --only-binary=:all:` (nova lib precisa de wheel); código root-owned, graváveis só `/app/media` e `/data/celerybeat`.
 - `beat` deve ter uma única instância. O healthcheck do web exige `127.0.0.1` em `DJANGO_ALLOWED_HOSTS`.
 - `USE_TZ=True` + `America/Sao_Paulo`: use `django.utils.timezone.now()`, nunca `datetime.now()`.

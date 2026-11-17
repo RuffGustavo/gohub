@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_filters",
     "drf_yasg",
+    "app.users",
 ]
 
 MIDDLEWARE = [
@@ -83,6 +84,20 @@ DATABASES = {
     }
 }
 
+# Usuário interno da tabela "usuario" (MER). Definido antes do primeiro migrate.
+AUTH_USER_MODEL = "users.Usuario"
+
+LOGIN_URL = "users:login"
+# Ainda não há painel de domínio; a área administrativa é o destino após o login.
+LOGIN_REDIRECT_URL = "admin:index"
+
+# Argon2id como padrão (MER, regras A5/B14; argon2-cffi já está em requirements.txt).
+# PBKDF2 permanece para verificar hashes nesse formato.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -116,7 +131,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {"BACKEND": "setup.storage.ManifestStaticFilesStorage"},
 }
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")

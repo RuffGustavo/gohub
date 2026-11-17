@@ -14,5 +14,6 @@
         "**/__pycache__": true,
         "**/.pytest_cache": true,
     },
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "ruff.enable": false
 }
