@@ -1,0 +1,63 @@
+{% extends "layouts/auth.html" %}
+{% comment %}
+    Formulário público de captação (LeadPublicoCreateView), no layout das telas públicas (P11).
+    A resposta é a mesma para lead novo, e-mail já cadastrado ou robô. O campo "website" é um
+    honeypot: oculto e fora da ordem de tabulação, só robôs o preenchem.
+{% endcomment %}
+
+{% block title %}Fale com a gente | GoHub{% endblock %}
+{% block description %}Envie seus dados de contato para o time do GoHub.{% endblock %}
+
+{% block auth_titulo %}Fale com a gente{% endblock %}
+{% block auth_descricao %}<p>Preencha seus dados e entraremos em contato. Todos os campos são obrigatórios.</p>{% endblock %}
+
+{% block auth_conteudo %}
+    {% if form.errors %}
+        <div class="alert alert-danger" role="alert" id="formulario-erros">
+            {% if form.non_field_errors %}
+                {% for erro in form.non_field_errors %}{{ erro }} {% endfor %}
+            {% else %}
+                Corrija os campos destacados abaixo.
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'leads:formulario' %}" novalidate>
+        {% csrf_token %}
+        {% include "partials/_campo_auth.html" with campo=form.nome autocomplete="name" autocapitalize="words" maxlength=150 %}
+        {% include "partials/_campo_auth.html" with campo=form.email tipo="email" autocomplete="email" maxlength=254 %}
+        {% include "partials/_campo_auth.html" with campo=form.telefone tipo="tel" autocomplete="tel" maxlength=30 %}
+        {% include "partials/_campo_auth.html" with campo=form.empresa autocomplete="organization" autocapitalize="words" maxlength=150 %}
+        {% include "partials/_campo_auth.html" with campo=form.cargo autocomplete="organization-title" autocapitalize="words" maxlength=100 %}
+
+        {% with campo=form.aceite_politica id=form.aceite_politica.id_for_label %}
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" name="{{ campo.html_name }}" id="{{ id }}"
+                           class="custom-control-input{% if campo.errors %} is-invalid{% endif %}" required
+                           {% if campo.value %}checked{% endif %}
+                           {% if campo.errors %}aria-invalid="true" aria-describedby="erro-{{ id }}"{% endif %}>
+                    <label class="custom-control-label" for="{{ id }}">{{ campo.label }}</label>
+                </div>
+                {% if politica_url %}
+                    <div class="form-note mt-1">
+                        <a href="{{ politica_url }}" target="_blank" rel="noopener noreferrer">Ler a política de privacidade<span class="visually-hidden"> (abre em nova aba)</span></a>
+                    </div>
+                {% endif %}
+                {% if campo.errors %}
+                    <div class="invalid-feedback d-block" id="erro-{{ id }}">{{ campo.errors|join:" " }}</div>
+                {% endif %}
+            </div>
+        {% endwith %}
+
+        {# Honeypot: escondido de pessoas e de leitores de tela. #}
+        <div class="visually-hidden" aria-hidden="true">
+            <label for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>
+            <input type="text" name="{{ form.website.html_name }}" id="{{ form.website.id_for_label }}" value="" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-lg btn-primary btn-block">Enviar</button>
+        </div>
+    </form>
+{% endblock %}

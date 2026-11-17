@@ -1,0 +1,20 @@
+{% extends "layouts/auth.html" %}
+{% comment %}
+    Resposta 429 da captação pública (limite de envios por IP, LeadPublicoThrottle).
+{% endcomment %}
+
+{% block title %}Muitas tentativas | GoHub{% endblock %}
+{% block description %}Limite de envios do formulário de contato atingido.{% endblock %}
+
+{% block auth_coluna_classe %} w-lg-45{% endblock %}
+
+{% block auth_titulo %}Muitas tentativas{% endblock %}
+{% block auth_descricao %}
+    <p role="alert">Recebemos muitos envios a partir da sua conexão. Aguarde alguns minutos e tente novamente.</p>
+{% endblock %}
+
+{% block auth_conteudo %}
+    <div class="form-note-s2 pt-4">
+        <a href="{% url 'leads:formulario' %}"><strong>Voltar ao formulário</strong></a>
+    </div>
+{% endblock %}

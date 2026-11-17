@@ -26,6 +26,17 @@
                     <span class="nk-menu-text">Painel</span>
                 </a>
             </li>
+            {% if perms.leads.view_lead %}
+                <li class="nk-menu-heading">
+                    <span class="overline-title text-primary-alt">Comercial</span>
+                </li>
+                <li class="nk-menu-item{% if atual == 'leads:painel-lista' or atual == 'leads:painel-detalhe' %} active current-page{% endif %}">
+                    <a href="{% url 'leads:painel-lista' %}" class="nk-menu-link"{% if atual == 'leads:painel-lista' %} aria-current="page"{% endif %}>
+                        <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-users"></em></span>
+                        <span class="nk-menu-text">Leads</span>
+                    </a>
+                </li>
+            {% endif %}
             <li class="nk-menu-heading">
                 <span class="overline-title text-primary-alt">Minha conta</span>
             </li>

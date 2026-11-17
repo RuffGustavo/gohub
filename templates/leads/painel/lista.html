@@ -1,0 +1,107 @@
+{% extends "layouts/painel.html" %}
+{% comment %}
+    Lista de leads ativos (PainelLeadListView, exige leads.view_lead). Filtros por GET,
+    preservados na paginação (querystring sem "page"). Dados de lead sempre com autoescape.
+{% endcomment %}
+
+{% block title %}Leads | GoHub{% endblock %}
+{% block description %}Leads recebidos pelo formulário de contato, com filtros por status, classificação e período.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">Leads</h1>
+                <div class="nk-block-des text-soft">
+                    <p>Leads recebidos pelo formulário de contato, dos mais recentes para os mais antigos.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="nk-block" aria-labelledby="titulo-filtros">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h2 class="title h6 mb-3" id="titulo-filtros">Filtros</h2>
+                {% if filtro.errors %}
+                    <div class="alert alert-warning" role="alert">Alguns filtros são inválidos e foram ignorados. Confira os campos destacados.</div>
+                {% endif %}
+                <form method="get" action="{% url 'leads:painel-lista' %}" novalidate>
+                    <div class="row g-3 align-end">
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.status tipo="select" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.classificacao tipo="select" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.inicio tipo="date" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.fim tipo="date" %}</div>
+                        <div class="col-lg-4">{% include "leads/painel/_campo.html" with campo=filtro.q maxlength=100 %}</div>
+                    </div>
+                    <ul class="align-center flex-wrap gx-3 gy-2 mt-3">
+                        <li><button type="submit" class="btn btn-primary">Filtrar</button></li>
+                        <li><a href="{% url 'leads:painel-lista' %}" class="link link-light">Limpar filtros</a></li>
+                    </ul>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="nk-block" aria-labelledby="titulo-resultados">
+        <h2 class="visually-hidden" id="titulo-resultados">Resultados</h2>
+        <div class="card card-bordered">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <caption class="px-3">
+                        {% if page_obj %}{{ page_obj.paginator.count }} lead(s) encontrado(s){% else %}{{ leads|length }} lead(s) encontrado(s){% endif %}
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Nome</th>
+                            <th scope="col">E-mail</th>
+                            <th scope="col">Telefone</th>
+                            <th scope="col">Empresa</th>
+                            <th scope="col">Cargo</th>
+                            <th scope="col">Recebido em</th>
+                            <th scope="col">Classificação</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in leads %}
+                            <tr>
+                                <th scope="row" class="fw-normal"><a href="{% url 'leads:painel-detalhe' lead.pk %}">{{ lead.nome }}</a></th>
+                                <td>{{ lead.email }}</td>
+                                <td class="text-nowrap">{{ lead.telefone }}</td>
+                                <td>{{ lead.empresa }}</td>
+                                <td>{{ lead.cargo }}</td>
+                                <td class="text-nowrap"><time datetime="{{ lead.created_at|date:'c' }}">{{ lead.created_at|date:"d/m/Y H:i" }}</time></td>
+                                <td>{% include "leads/painel/_selo.html" with tipo="classificacao" valor=lead.classificacao_atual rotulo=lead.get_classificacao_atual_display %}</td>
+                                <td>{% include "leads/painel/_selo.html" with tipo="status" valor=lead.status_atual rotulo=lead.get_status_atual_display %}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-soft py-4">Nenhum lead encontrado com esses filtros.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if is_paginated %}
+                <div class="card-inner">
+                    <nav aria-label="Paginação da lista de leads">
+                        <ul class="pagination justify-content-center justify-content-md-start mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                            {% endif %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+                            {% if page_obj.has_next %}
+                                <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Próxima</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

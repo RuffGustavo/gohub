@@ -2,7 +2,9 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
+import ipaddress
 import os
+import re
 
 # Carrega o .env local (venv/bind mount). Não sobrescreve variáveis já definidas
 # no ambiente, então valores do Docker Compose têm precedência.
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_yasg",
     "app.users",
+    "app.leads",
 ]
 
 MIDDLEWARE = [
@@ -92,6 +95,34 @@ AUTH_USER_MODEL = "users.Usuario"
 # Login do cliente na página inicial (/); depois dele, o dashboard.
 LOGIN_URL = "users:login"
 LOGIN_REDIRECT_URL = "users:painel"
+
+# Django Admin (Jazzmin): identidade do GoHub/DashLite e caminho de volta ao painel (o Jazzmin
+# não exibe o "Ver o site" do admin padrão). O tema visual fica em assets/css/gohub-admin.css;
+# a fonte é a Roboto local (sem o CDN do Google, que o Jazzmin usa por padrão).
+JAZZMIN_SETTINGS = {
+    "site_title": "Administração | GoHub",
+    "site_header": "GoHub",
+    "site_brand": "GoHub",
+    "site_logo": "images/favicon.png",
+    "site_logo_classes": "",
+    "login_logo": "images/favicon.png",
+    "site_icon": "images/favicon.png",
+    "welcome_sign": "Área administrativa do GoHub",
+    "copyright": "GoHub",
+    "custom_css": "assets/css/gohub-admin.css",
+    "use_google_fonts_cdn": False,
+    "topmenu_links": [
+        {"name": "Voltar ao painel", "url": "users:painel"},
+    ],
+    "usermenu_links": [
+        {"name": "Voltar ao painel", "url": "users:painel", "icon": "fas fa-arrow-left"},
+    ],
+}
+JAZZMIN_UI_TWEAKS = {
+    "navbar": "navbar-white navbar-light",
+    "sidebar_nav_child_indent": True,
+    "default_theme_mode": "light",
+}
 
 # Validade do link de redefinição de senha, em segundos (padrão do Django: 3 dias).
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "3600"))
@@ -192,6 +223,48 @@ _redis_auth = f":{quote(REDIS_PASSWORD, safe='')}@" if REDIS_PASSWORD else ""
 CELERY_BROKER_URL = f"redis://{_redis_auth}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TIMEZONE = TIME_ZONE
+
+# Cache compartilhado entre os processos (mesmo Redis do Celery, em outro banco lógico).
+# Hoje só guarda os contadores do rate limit da captação pública (app.leads.throttles).
+REDIS_CACHE_DB = os.getenv("REDIS_CACHE_DB", "1")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{_redis_auth}{REDIS_HOST}:{REDIS_PORT}/{REDIS_CACHE_DB}",
+        "KEY_PREFIX": "gohub",
+    }
+}
+
+# Leads (app.leads): consentimento LGPD e proteção da captação pública.
+# Versão da política aceita no formulário (gravada em lead.politica_versao, até 20 caracteres).
+POLITICA_PRIVACIDADE_VERSAO = os.getenv("POLITICA_PRIVACIDADE_VERSAO", "1.0").strip()
+if not 1 <= len(POLITICA_PRIVACIDADE_VERSAO) <= 20:
+    raise ImproperlyConfigured("POLITICA_PRIVACIDADE_VERSAO deve ter de 1 a 20 caracteres.")
+# Link exibido no formulário público; vazio oculta o link.
+POLITICA_PRIVACIDADE_URL = os.getenv("POLITICA_PRIVACIDADE_URL", "").strip()
+if POLITICA_PRIVACIDADE_URL and (
+    not POLITICA_PRIVACIDADE_URL.startswith(("https://", "/")) or POLITICA_PRIVACIDADE_URL.startswith("//")
+):
+    raise ImproperlyConfigured("POLITICA_PRIVACIDADE_URL deve começar com https:// ou / (caminho do próprio site).")
+# Envios por IP na tela e na API de captação, somados (formato do DRF: 10/min, 100/hour...).
+LEADS_PUBLICO_TAXA = os.getenv("LEADS_PUBLICO_TAXA", "10/min").strip()
+if not re.fullmatch(r"[1-9][0-9]*/(s|sec|m|min|h|hour|d|day)", LEADS_PUBLICO_TAXA):
+    raise ImproperlyConfigured("LEADS_PUBLICO_TAXA deve estar no formato <número>/<s|min|hour|day>, ex.: 10/min.")
+# Quantos proxies confiáveis ficam na frente do Django. 0 = usa o IP da conexão (REMOTE_ADDR)
+# e ignora X-Forwarded-For (que o cliente consegue forjar).
+LEADS_PROXY_SALTOS = int(os.getenv("LEADS_PROXY_SALTOS", "0"))
+if LEADS_PROXY_SALTOS < 0:
+    raise ImproperlyConfigured("LEADS_PROXY_SALTOS não pode ser negativo.")
+# IPs/redes (CIDR) dos proxies confiáveis: o X-Forwarded-For só é lido se a conexão vier de um
+# deles (outro container da rede não consegue forjar o IP do visitante).
+LEADS_PROXY_CONFIAVEIS = env_list("LEADS_PROXY_CONFIAVEIS")
+try:
+    for _rede in LEADS_PROXY_CONFIAVEIS:
+        ipaddress.ip_network(_rede, strict=False)
+except ValueError:
+    raise ImproperlyConfigured("LEADS_PROXY_CONFIAVEIS deve listar IPs ou redes CIDR separados por vírgula.") from None
+if LEADS_PROXY_SALTOS > 0 and not LEADS_PROXY_CONFIAVEIS:
+    raise ImproperlyConfigured("Com LEADS_PROXY_SALTOS > 0, informe os proxies em LEADS_PROXY_CONFIAVEIS.")
 
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")

@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+{% comment %}
+    Confirmação da ação "Anonimizar dados pessoais (LGPD)" (app/leads/admin.py). A ação é
+    irreversível; a permissão leads.anonimizar_lead é validada pelo admin no POST.
+{% endcomment %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Início</a>
+        &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+        &rsaquo; <a href="{% url 'admin:leads_lead_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+        &rsaquo; {{ title }}
+    </div>
+{% endblock %}
+
+{% block content %}
+    <p>Os dados pessoais (nome, e-mail, telefone, empresa e cargo) dos leads abaixo serão substituídos
+        e os leads serão excluídos logicamente. Os históricos de status e classificação são mantidos.
+        <strong>Esta ação não pode ser desfeita.</strong></p>
+    <ul>
+        {% for lead in leads %}
+            <li>{{ lead.nome }} — recebido em {{ lead.created_at|date:"d/m/Y H:i" }}</li>
+        {% endfor %}
+    </ul>
+    <form method="post">
+        {% csrf_token %}
+        {% for lead in leads %}
+            <input type="hidden" name="{{ action_checkbox_name }}" value="{{ lead.pk }}">
+        {% endfor %}
+        <input type="hidden" name="action" value="anonimizar">
+        <input type="hidden" name="confirmar" value="sim">
+        <button type="submit" class="btn btn-danger">Sim, anonimizar</button>
+        <a href="{% url 'admin:leads_lead_changelist' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+{% endblock %}

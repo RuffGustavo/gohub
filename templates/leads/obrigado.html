@@ -1,0 +1,15 @@
+{% extends "layouts/auth.html" %}
+{% comment %}
+    Confirmação neutra da captação (LeadObrigadoView): idêntica para lead novo, e-mail já
+    cadastrado ou robô (não revela quais e-mails existem).
+{% endcomment %}
+
+{% block title %}Recebemos seus dados | GoHub{% endblock %}
+{% block description %}Confirmação do envio dos seus dados de contato ao GoHub.{% endblock %}
+
+{% block auth_coluna_classe %} w-lg-45{% endblock %}
+
+{% block auth_titulo %}Recebemos seus dados{% endblock %}
+{% block auth_descricao %}
+    <p role="status"><em class="icon ni ni-check-circle-fill text-success me-1" aria-hidden="true"></em>Obrigado pelo contato. Em breve entraremos em contato.</p>
+{% endblock %}

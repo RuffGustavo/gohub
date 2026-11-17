@@ -1,0 +1,42 @@
+{% comment %}
+    Campo de formulário do painel (padrão form-group do tema) com label, ajuda e erro ligados
+    por aria-describedby. Parâmetros:
+        campo      BoundField (obrigatório)
+        tipo       "select", "textarea", "date" ou "text" (padrão)
+        maxlength  limite coerente com o form (opcional)
+        classe     classes extras do form-group (opcional)
+{% endcomment %}
+{% with id=campo.id_for_label %}
+    <div class="form-group{% if classe %} {{ classe }}{% endif %}">
+        <label class="form-label" for="{{ id }}">{{ campo.label }}</label>
+        <div class="form-control-wrap">
+            {% if tipo == "select" %}
+                <select name="{{ campo.html_name }}" id="{{ id }}" class="form-select{% if campo.errors %} is-invalid{% endif %}"
+                        {% if campo.field.required %}required{% endif %}
+                        {% if campo.errors %}aria-invalid="true" aria-describedby="erro-{{ id }}"{% elif campo.help_text %}aria-describedby="ajuda-{{ id }}"{% endif %}>
+                    {% for valor, rotulo in campo.field.choices %}
+                        <option value="{{ valor }}"{% if campo.value|stringformat:"s" == valor|stringformat:"s" %} selected{% endif %}>{{ rotulo }}</option>
+                    {% endfor %}
+                </select>
+            {% elif tipo == "textarea" %}
+                <textarea name="{{ campo.html_name }}" id="{{ id }}" rows="3" class="form-control{% if campo.errors %} is-invalid{% endif %}"
+                          {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+                          {% if campo.field.required %}required{% endif %}
+                          {% if campo.errors %}aria-invalid="true" aria-describedby="erro-{{ id }}{% if campo.help_text %} ajuda-{{ id }}{% endif %}"{% elif campo.help_text %}aria-describedby="ajuda-{{ id }}"{% endif %}>{{ campo.value|default:'' }}</textarea>
+            {% else %}
+                <input type="{% if tipo == 'date' %}date{% else %}text{% endif %}" name="{{ campo.html_name }}" id="{{ id }}"
+                       class="form-control{% if campo.errors %} is-invalid{% endif %}" value="{{ campo.value|default:'' }}"
+                       {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+                       {% if campo.field.required %}required{% endif %}
+                       {% if campo.errors %}aria-invalid="true" aria-describedby="erro-{{ id }}{% if campo.help_text %} ajuda-{{ id }}{% endif %}"{% elif campo.help_text %}aria-describedby="ajuda-{{ id }}"{% endif %}>
+            {% endif %}
+            {% if campo.errors %}
+                <div class="invalid-feedback" id="erro-{{ id }}">{{ campo.errors|join:" " }}</div>
+            {% endif %}
+        </div>
+        {% if campo.help_text %}
+            {# help_text é texto fixo do form, não dado do usuário. #}
+            <div class="form-note mt-1" id="ajuda-{{ id }}">{{ campo.help_text }}</div>
+        {% endif %}
+    </div>
+{% endwith %}

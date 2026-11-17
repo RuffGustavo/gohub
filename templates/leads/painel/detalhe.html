@@ -1,0 +1,144 @@
+{% extends "layouts/painel.html" %}
+{% comment %}
+    Detalhe do lead (PainelLeadDetailView, exige leads.view_lead) com os históricos (últimos
+    100 de cada). O formulário de reclassificação só aparece para quem tem
+    leads.reclassificar_lead, mas a view de reclassificação valida a permissão de qualquer forma.
+{% endcomment %}
+
+{% block title %}Lead {{ lead.nome }} | GoHub{% endblock %}
+{% block description %}Dados, situação e históricos de um lead recebido.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">{{ lead.nome }}</h1>
+                <div class="nk-block-des text-soft">
+                    <p>Recebido em <time datetime="{{ lead.created_at|date:'c' }}">{{ lead.created_at|date:"d/m/Y H:i" }}</time></p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="{% url 'leads:painel-lista' %}" class="btn btn-outline-light bg-white">
+                    <em class="icon ni ni-arrow-left" aria-hidden="true"></em><span>Voltar à lista</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <section class="col-lg-6" aria-labelledby="titulo-dados">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h2 class="title h6 mb-3" id="titulo-dados">Dados informados</h2>
+                        <dl class="gohub-dados">
+                            <dt>E-mail</dt><dd>{{ lead.email }}</dd>
+                            <dt>Telefone</dt><dd>{{ lead.telefone }}</dd>
+                            <dt>Empresa</dt><dd>{{ lead.empresa }}</dd>
+                            <dt>Cargo</dt><dd>{{ lead.cargo }}</dd>
+                            <dt>Aceite da política</dt>
+                            <dd>{{ lead.consentimento_em|date:"d/m/Y H:i" }} (versão {{ lead.politica_versao }})</dd>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+            <section class="col-lg-6" aria-labelledby="titulo-situacao">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h2 class="title h6 mb-3" id="titulo-situacao">Situação atual</h2>
+                        <dl class="gohub-dados">
+                            <dt>Status</dt>
+                            <dd>{% include "leads/painel/_selo.html" with tipo="status" valor=lead.status_atual rotulo=lead.get_status_atual_display %} desde {{ lead.status_atualizado_em|date:"d/m/Y H:i" }}</dd>
+                            <dt>Classificação</dt>
+                            <dd>{% include "leads/painel/_selo.html" with tipo="classificacao" valor=lead.classificacao_atual rotulo=lead.get_classificacao_atual_display %}{% if lead.classificado_em %} desde {{ lead.classificado_em|date:"d/m/Y H:i" }}{% endif %}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    {% if pode_reclassificar %}
+        <section class="nk-block" aria-labelledby="titulo-reclassificar">
+            <div class="card card-bordered">
+                <div class="card-inner">
+                    <h2 class="title h6 mb-1" id="titulo-reclassificar">Reclassificar</h2>
+                    <p class="text-soft">A classificação atual continua registrada no histórico.</p>
+                    {% if form_reclassificacao.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">{% for erro in form_reclassificacao.non_field_errors %}{{ erro }} {% endfor %}</div>
+                    {% endif %}
+                    <form method="post" action="{% url 'leads:painel-reclassificar' lead.pk %}" class="gohub-form-perfil" novalidate>
+                        {% csrf_token %}
+                        {% include "leads/painel/_campo.html" with campo=form_reclassificacao.classificacao tipo="select" %}
+                        {% include "leads/painel/_campo.html" with campo=form_reclassificacao.justificativa tipo="textarea" maxlength=2000 %}
+                        <button type="submit" class="btn btn-primary">Salvar reclassificação</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="nk-block" aria-labelledby="titulo-classificacoes">
+        <h2 class="nk-block-title title h6 mb-3" id="titulo-classificacoes">Histórico de classificação</h2>
+        <div class="card card-bordered">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <caption class="px-3">Classificações do lead, das mais recentes para as mais antigas</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Quando</th>
+                            <th scope="col">Classificação</th>
+                            <th scope="col">Método</th>
+                            <th scope="col">Autor</th>
+                            <th scope="col">Justificativa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in classificacoes %}
+                            <tr>
+                                <td class="text-nowrap">{{ item.classificado_em|date:"d/m/Y H:i" }}</td>
+                                <td>{{ item.get_classificacao_display }}</td>
+                                <td>{{ item.get_metodo_display }}{% if item.confianca is not None %} (confiança {{ item.confianca }}){% endif %}</td>
+                                <td>{{ item.autor }}</td>
+                                <td>{{ item.justificativa|default:"—" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5" class="text-center text-soft py-4">Ainda não classificado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="nk-block" aria-labelledby="titulo-status">
+        <h2 class="nk-block-title title h6 mb-3" id="titulo-status">Histórico de status</h2>
+        <div class="card card-bordered">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <caption class="px-3">Mudanças de status, das mais recentes para as mais antigas</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Quando</th>
+                            <th scope="col">De</th>
+                            <th scope="col">Para</th>
+                            <th scope="col">Origem</th>
+                            <th scope="col">Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in historico_status %}
+                            <tr>
+                                <td class="text-nowrap">{{ item.ocorrido_em|date:"d/m/Y H:i:s" }}</td>
+                                <td>{% if item.status_anterior %}{{ item.get_status_anterior_display }}{% else %}—{% endif %}</td>
+                                <td>{{ item.get_status_novo_display }}</td>
+                                <td>{{ item.autor }}</td>
+                                <td>{{ item.observacao|default:"—" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+{% endblock %}

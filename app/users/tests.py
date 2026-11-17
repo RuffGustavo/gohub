@@ -952,3 +952,33 @@ class UsuarioMeAPITests(APITestCase):
         self.client.force_authenticate(criar_usuario())
         self.assertEqual(self.client.post(self.url, {"username": "x"}).status_code, 405)
         self.assertEqual(self.client.get("/api/usuarios/").status_code, 404)
+
+
+@override_settings(STORAGES=STORAGES_DE_TESTE)
+class AdminVoltarAoPainelTests(TestCase):
+    """O admin (Jazzmin) oferece o caminho de volta ao painel do GoHub."""
+
+    def test_link_voltar_ao_painel_no_admin(self):
+        usuario = criar_usuario()
+        dar_acesso_admin(usuario)
+        self.client.force_login(usuario)
+        resposta = self.client.get(reverse("admin:index"))
+        self.assertEqual(resposta.status_code, 200)
+        conteudo = resposta.content.decode()
+        self.assertGreaterEqual(conteudo.count(f'href="{reverse("users:painel")}"'), 2)  # barra superior + menu do usuário
+        self.assertIn("Voltar ao painel", conteudo)
+
+    def test_tema_gohub_no_admin(self):
+        usuario = criar_usuario()
+        dar_acesso_admin(usuario)
+        self.client.force_login(usuario)
+        conteudo = self.client.get(reverse("admin:index")).content.decode()
+        self.assertIn("assets/css/gohub-admin.css", conteudo)
+        self.assertNotIn("fonts.googleapis.com", conteudo)  # só fonte local (Roboto do DashLite)
+        self.assertIn("GoHub", conteudo)
+        self.assertNotIn("AdminLTELogo", conteudo)
+
+    def test_login_do_admin_com_tema(self):
+        conteudo = self.client.get(reverse("admin:login")).content.decode()
+        self.assertIn("assets/css/gohub-admin.css", conteudo)
+        self.assertNotIn("fonts.googleapis.com", conteudo)

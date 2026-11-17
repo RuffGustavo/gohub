@@ -1,0 +1,18 @@
+{% comment %}
+    Selo de status ou classificação do lead: o texto é sempre exibido (a cor é só reforço).
+    Parâmetros: valor (código), rotulo (texto exibido), tipo ("status" ou "classificacao").
+    Uso: {% include "leads/painel/_selo.html" with tipo="status" valor=lead.status_atual rotulo=lead.get_status_atual_display %}
+{% endcomment %}
+{% if tipo == "classificacao" %}
+    {% if valor == "quente" %}<span class="badge badge-dim bg-danger">{{ rotulo }}</span>
+    {% elif valor == "morno" %}<span class="badge badge-dim bg-warning">{{ rotulo }}</span>
+    {% elif valor == "frio" %}<span class="badge badge-dim bg-info">{{ rotulo }}</span>
+    {% else %}<span class="badge badge-dim bg-gray">Não classificado</span>{% endif %}
+{% else %}
+    {% if valor == "enviado_crm" %}<span class="badge badge-dim bg-success">{{ rotulo }}</span>
+    {% elif valor == "em_nutricao" %}<span class="badge badge-dim bg-primary">{{ rotulo }}</span>
+    {% elif valor == "duplicado" %}<span class="badge badge-dim bg-warning">{{ rotulo }}</span>
+    {% elif valor == "erro" %}<span class="badge badge-dim bg-danger">{{ rotulo }}</span>
+    {% elif valor == "invalido" %}<span class="badge badge-dim bg-gray">{{ rotulo }}</span>
+    {% else %}<span class="badge badge-dim bg-info">{{ rotulo }}</span>{% endif %}
+{% endif %}

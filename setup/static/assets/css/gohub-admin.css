@@ -1,0 +1,353 @@
+/*
+ * Tema do Django Admin (Jazzmin 3 = AdminLTE 4 + Bootstrap 5) com a identidade visual do
+ * DashLite usada no painel do GoHub: cores, tipografia Roboto local, raios, bordas e menu claro.
+ * Carregado só no admin, por JAZZMIN_SETTINGS["custom_css"] (setup/settings.py), depois do
+ * CSS do Jazzmin. Não altera templates nem funcionalidades do Jazzmin: só sobrescreve tokens e
+ * componentes. Valores da paleta de assets/css/dashlite.css (não editar aquele arquivo); onde o
+ * par original não atinge o contraste WCAG 2.2 AA (texto 4.5:1, componentes 3:1), usa-se o tom
+ * mais escuro da própria paleta (ex.: #5664d9, o hover do primário do DashLite).
+ * Seções: fontes → tokens → base → componentes → preferências do usuário.
+ */
+
+/* ==== Fontes ==== */
+/* Roboto local, a mesma do DashLite (o CDN do Google do Jazzmin é desligado nas settings). */
+@font-face {
+    font-family: Roboto;
+    font-weight: 300;
+    font-display: swap;
+    src: url("../fonts/Roboto-Light.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: Roboto;
+    font-weight: 400;
+    font-display: swap;
+    src: url("../fonts/Roboto-Regular.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: Roboto;
+    font-weight: 500;
+    font-display: swap;
+    src: url("../fonts/Roboto-Medium.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: Roboto;
+    font-weight: 700;
+    font-display: swap;
+    src: url("../fonts/Roboto-Bold.woff2") format("woff2");
+}
+
+/* ==== Tokens ==== */
+/* Paleta e forma do DashLite nos dois modos (claro e escuro do seletor do Jazzmin). */
+:root {
+    --bs-primary: #6576ff;
+    --bs-primary-rgb: 101, 118, 255;
+    --bs-secondary: #364a63;
+    --bs-secondary-rgb: 54, 74, 99;
+    --bs-success: #1ee0ac;
+    --bs-success-rgb: 30, 224, 172;
+    --bs-info: #09c2de;
+    --bs-info-rgb: 9, 194, 222;
+    --bs-warning: #f4bd0e;
+    --bs-warning-rgb: 244, 189, 14;
+    --bs-danger: #e85347;
+    --bs-danger-rgb: 232, 83, 71;
+    --bs-body-font-family: Roboto, sans-serif;
+    --bs-body-font-size: 0.875rem;
+    --bs-body-line-height: 1.65;
+    --bs-border-radius-sm: 3px;
+    --bs-border-radius: 4px;
+    --bs-border-radius-lg: 5px;
+    --bs-border-radius-xl: 8px;
+    --bs-focus-ring-color: rgba(101, 118, 255, 0.35);
+    /* Só o que não tem equivalente --bs-*. Medido contra branco:
+       primário em texto/fundo de botão #5664d9 (4.98:1), forte #4c59bf (6.02:1),
+       texto de apoio #526484 (5.97:1), borda de campo #8094ae (3.10:1), texto sobre
+       verde/azul/amarelo #1f2b3a (≥ 6.6:1). */
+    --gohub-admin-primary-texto: #5664d9;
+    --gohub-admin-primary-forte: #4c59bf;
+    --gohub-admin-texto-apoio: #526484;
+    --gohub-admin-borda-campo: #8094ae;
+    --gohub-admin-texto-escuro: #1f2b3a;
+    --gohub-admin-ativo-bg: rgba(var(--bs-primary-rgb), 0.1);
+    --gohub-admin-hover-bg: rgba(var(--bs-primary-rgb), 0.06);
+    --gohub-admin-focus-ring-width: 2px;
+}
+
+/* Modo claro: superfícies, texto e bordas do DashLite. */
+:root[data-bs-theme="light"] {
+    --bs-body-color: #526484;
+    --bs-body-color-rgb: 82, 100, 132;
+    --bs-body-bg: #fff;
+    --bs-body-bg-rgb: 255, 255, 255;
+    --bs-tertiary-bg: #f5f6fa;
+    --bs-tertiary-bg-rgb: 245, 246, 250;
+    --bs-emphasis-color: #364a63;
+    --bs-heading-color: #364a63;
+    --bs-secondary-color: #8094ae;
+    --bs-border-color: #dbdfea;
+    --bs-gray-200: #e5e9f2;
+    --bs-link-color: var(--gohub-admin-primary-texto);
+    --bs-link-color-rgb: 86, 100, 217;
+    --bs-link-hover-color: var(--gohub-admin-primary-forte);
+    --bs-link-hover-color-rgb: 76, 89, 191;
+}
+
+/* ==== Base ==== */
+
+/* Foco visível por teclado (WCAG 2.4.7), mesmo padrão de gohub.css. Alguns componentes do
+   AdminLTE removem o indicador com box-shadow/outline: none, por isso o !important. */
+:is(a, button, summary, [tabindex]):focus-visible {
+    outline: var(--gohub-admin-focus-ring-width) solid var(--bs-primary) !important;
+    outline-offset: 2px;
+}
+
+:is(h1, h2, h3, h4, h5, h6) {
+    font-weight: 500;
+}
+
+/* ==== Componentes ==== */
+
+/* Cabeçalho: claro, com a borda fina do DashLite em vez de sombra. */
+:root[data-bs-theme="light"] .app-header {
+    border-bottom: 1px solid var(--bs-gray-200);
+}
+
+/*
+ * Menu lateral claro, como o nk-sidebar do DashLite. O Jazzmin fixa data-bs-theme="dark" no
+ * <aside>; no modo claro os tokens do Bootstrap e do AdminLTE são redefinidos no próprio aside.
+ * No modo escuro o menu escuro original do Jazzmin é mantido.
+ */
+:root[data-bs-theme="light"] .app-sidebar {
+    color-scheme: light;
+    --bs-body-bg: #fff;
+    --bs-body-color: var(--gohub-admin-texto-apoio);
+    --bs-emphasis-color: var(--bs-secondary);
+    --bs-secondary-bg: #fff;
+    --bs-secondary-bg-rgb: 255, 255, 255;
+    --bs-border-color: var(--bs-gray-200);
+    --lte-sidebar-color: var(--gohub-admin-texto-apoio);
+    --lte-sidebar-hover-color: var(--gohub-admin-primary-forte);
+    --lte-sidebar-hover-bg: var(--gohub-admin-hover-bg);
+    --lte-sidebar-active-color: var(--gohub-admin-primary-forte);
+    --lte-sidebar-menu-active-color: var(--gohub-admin-primary-forte);
+    --lte-sidebar-menu-active-bg: var(--gohub-admin-ativo-bg);
+    --lte-sidebar-submenu-color: var(--gohub-admin-texto-apoio);
+    --lte-sidebar-submenu-bg: transparent;
+    --lte-sidebar-submenu-hover-color: var(--gohub-admin-primary-forte);
+    --lte-sidebar-submenu-hover-bg: var(--gohub-admin-hover-bg);
+    --lte-sidebar-submenu-active-color: var(--gohub-admin-primary-forte);
+    --lte-sidebar-submenu-active-bg: var(--gohub-admin-ativo-bg);
+    --lte-sidebar-header-color: var(--gohub-admin-texto-apoio);
+    border-right: 1px solid var(--bs-gray-200);
+    /* O utilitário .shadow do template usa !important; o DashLite separa o menu só com borda. */
+    box-shadow: none !important;
+}
+
+.app-sidebar .sidebar-brand {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.app-sidebar .brand-text {
+    font-weight: 700;
+    color: var(--bs-emphasis-color);
+}
+
+.app-sidebar .sidebar-menu .nav-link {
+    border-radius: var(--bs-border-radius);
+    font-weight: 500;
+}
+
+/* Títulos de grupo do menu no estilo "overline" do DashLite. */
+.app-sidebar .nav-header {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--lte-sidebar-header-color);
+}
+
+/* Cartões: borda fina e cantos do DashLite, sem sombra pesada. */
+.card {
+    --bs-card-border-color: var(--bs-border-color);
+    --bs-card-border-radius: var(--bs-border-radius);
+    --bs-card-inner-border-radius: var(--bs-border-radius-sm);
+    --bs-card-cap-bg: transparent;
+    box-shadow: none;
+}
+
+.card-title {
+    font-weight: 500;
+    color: var(--bs-emphasis-color);
+}
+
+/* Botões com as cores, hover e active do DashLite (o Bootstrap compilado usa literais). */
+.btn {
+    --bs-btn-font-weight: 700;
+    --bs-btn-border-radius: var(--bs-border-radius);
+    letter-spacing: 0.02em;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--gohub-admin-primary-texto);
+    --bs-btn-border-color: var(--gohub-admin-primary-texto);
+    --bs-btn-hover-bg: var(--gohub-admin-primary-forte);
+    --bs-btn-hover-border-color: var(--gohub-admin-primary-forte);
+    --bs-btn-focus-shadow-rgb: 124, 139, 255;
+    --bs-btn-active-bg: var(--gohub-admin-primary-forte);
+    --bs-btn-active-border-color: var(--gohub-admin-primary-forte);
+    --bs-btn-disabled-bg: var(--gohub-admin-primary-texto);
+    --bs-btn-disabled-border-color: var(--gohub-admin-primary-texto);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--gohub-admin-primary-texto);
+    --bs-btn-border-color: var(--gohub-admin-primary-texto);
+    --bs-btn-hover-bg: var(--gohub-admin-primary-texto);
+    --bs-btn-hover-border-color: var(--gohub-admin-primary-texto);
+    --bs-btn-active-bg: var(--gohub-admin-primary-forte);
+    --bs-btn-active-border-color: var(--gohub-admin-primary-forte);
+    --bs-btn-disabled-color: var(--gohub-admin-primary-texto);
+}
+
+.btn-secondary {
+    --bs-btn-bg: var(--bs-secondary);
+    --bs-btn-border-color: var(--bs-secondary);
+    --bs-btn-hover-bg: #2e3f54;
+    --bs-btn-hover-border-color: #2b3b4f;
+    --bs-btn-active-bg: #2b3b4f;
+    --bs-btn-active-border-color: #29384a;
+    --bs-btn-disabled-bg: var(--bs-secondary);
+    --bs-btn-disabled-border-color: var(--bs-secondary);
+}
+
+/* Perigo: tom do hover do DashLite como base (branco sobre #e85347 dá só 3.65:1). */
+.btn-danger {
+    --bs-btn-bg: #c5473c;
+    --bs-btn-border-color: #c5473c;
+    --bs-btn-hover-bg: #ba4239;
+    --bs-btn-hover-border-color: #ae3e35;
+    --bs-btn-active-bg: #ae3e35;
+    --bs-btn-active-border-color: #ae3e35;
+    --bs-btn-disabled-bg: #c5473c;
+    --bs-btn-disabled-border-color: #c5473c;
+}
+
+/* Verde, azul e amarelo do DashLite são claros: texto escuro (branco sobre o verde dá 1.71:1). */
+:is(.btn-success, .btn-info, .btn-warning) {
+    --bs-btn-color: var(--gohub-admin-texto-escuro);
+    --bs-btn-hover-color: var(--gohub-admin-texto-escuro);
+    --bs-btn-active-color: var(--gohub-admin-texto-escuro);
+    --bs-btn-disabled-color: var(--gohub-admin-texto-escuro);
+}
+
+.btn-success {
+    --bs-btn-bg: var(--bs-success);
+    --bs-btn-border-color: var(--bs-success);
+    --bs-btn-hover-bg: #1abe92;
+    --bs-btn-hover-border-color: #18b38a;
+    --bs-btn-active-bg: #18b38a;
+    --bs-btn-active-border-color: #17a881;
+    --bs-btn-disabled-bg: var(--bs-success);
+    --bs-btn-disabled-border-color: var(--bs-success);
+}
+
+.btn-info {
+    --bs-btn-bg: var(--bs-info);
+    --bs-btn-border-color: var(--bs-info);
+    --bs-btn-hover-bg: #08a5bd;
+    --bs-btn-hover-border-color: #089bb2;
+    --bs-btn-active-bg: #089bb2;
+    --bs-btn-active-border-color: #0792a7;
+}
+
+.btn-warning {
+    --bs-btn-bg: var(--bs-warning);
+    --bs-btn-border-color: var(--bs-warning);
+    --bs-btn-hover-bg: #cfa10c;
+    --bs-btn-hover-border-color: #c3970b;
+    --bs-btn-active-bg: #c3970b;
+    --bs-btn-active-border-color: #b78e0b;
+}
+
+/* Campos: foco do DashLite, com anel mais visível que o original. */
+/* Borda #8094ae (3.10:1, WCAG 1.4.11); a #dbdfea original do DashLite tem 1.33:1. */
+.form-control,
+.form-select {
+    border-color: var(--gohub-admin-borda-campo);
+    border-radius: var(--bs-border-radius);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.form-check-input:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.2);
+}
+
+/* Tabelas (changelist e inlines): cabeçalho discreto como as listas do DashLite. */
+.table > thead th {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gohub-admin-texto-apoio);
+    border-bottom-color: var(--bs-border-color);
+}
+
+.table > :not(caption) > * > * {
+    border-bottom-color: var(--bs-border-color);
+}
+
+/* Paginação, menus suspensos e abas com a cor primária do DashLite. */
+.pagination {
+    --bs-pagination-color: var(--gohub-admin-primary-texto);
+    --bs-pagination-hover-color: var(--gohub-admin-primary-forte);
+    --bs-pagination-focus-color: var(--gohub-admin-primary-forte);
+    --bs-pagination-active-bg: var(--gohub-admin-primary-texto);
+    --bs-pagination-active-border-color: var(--gohub-admin-primary-texto);
+    --bs-pagination-border-radius: var(--bs-border-radius);
+}
+
+.dropdown-menu {
+    --bs-dropdown-border-color: var(--bs-border-color);
+    --bs-dropdown-border-radius: var(--bs-border-radius);
+    --bs-dropdown-link-active-bg: var(--gohub-admin-primary-texto);
+    --bs-dropdown-box-shadow: var(--bs-box-shadow-sm);
+}
+
+.nav-tabs {
+    --bs-nav-tabs-link-active-color: var(--gohub-admin-primary-forte);
+    --bs-nav-link-color: var(--gohub-admin-texto-apoio);
+    --bs-nav-link-hover-color: var(--gohub-admin-primary-forte);
+}
+
+/* Tela de login do admin: fundo do DashLite e cartão com borda fina. */
+:root[data-bs-theme="light"] .login-page {
+    background-color: var(--bs-tertiary-bg);
+}
+
+/* ==== Preferências do usuário ==== */
+
+/* Mesmo tratamento de movimento reduzido do painel (gohub.css). */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
