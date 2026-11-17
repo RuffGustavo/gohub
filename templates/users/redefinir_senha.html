@@ -1,0 +1,26 @@
+{% extends "layouts/auth.html" %}
+{% comment %}
+    Pedido de redefinição de senha (base: templates/exemplos/pages/auths/auth-reset.html).
+    A resposta é a mesma exista ou não conta com o e-mail (sem enumeração de usuários).
+{% endcomment %}
+
+{% block title %}Redefinir senha | GoHub{% endblock %}
+{% block description %}Receba por e-mail um link para criar uma nova senha no GoHub.{% endblock %}
+
+{% block auth_coluna_classe %} w-lg-45{% endblock %}
+
+{% block auth_titulo %}Redefinir senha{% endblock %}
+{% block auth_descricao %}<p>Informe o e-mail cadastrado na sua conta. Enviaremos um link para você criar uma nova senha.</p>{% endblock %}
+
+{% block auth_conteudo %}
+    <form method="post" action="{% url 'users:redefinir-senha' %}" novalidate>
+        {% csrf_token %}
+        {% include "partials/_campo_auth.html" with campo=form.email tipo="email" autocomplete="email" maxlength=254 autofocus=True %}
+        <div class="form-group">
+            <button type="submit" class="btn btn-lg btn-primary btn-block">Enviar link de redefinição</button>
+        </div>
+    </form>
+    <div class="form-note-s2 pt-5">
+        <a href="{% url 'users:login' %}"><strong>Voltar para o login</strong></a>
+    </div>
+{% endblock %}

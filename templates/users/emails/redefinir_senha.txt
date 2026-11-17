@@ -1,0 +1,12 @@
+{% autoescape off %}Olá, {{ user.get_short_name }}.
+
+Recebemos um pedido para redefinir a senha da sua conta no GoHub ({{ user.get_username }}).
+Para criar uma nova senha, acesse o link abaixo:
+
+{{ protocol }}://{{ domain }}{% url 'users:redefinir-senha-confirmar' uidb64=uid token=token %}
+
+O link pode ser usado uma única vez e expira em breve. Se você não fez este pedido,
+ignore este e-mail: sua senha atual continua valendo.
+
+Equipe GoHub
+{% endautoescape %}

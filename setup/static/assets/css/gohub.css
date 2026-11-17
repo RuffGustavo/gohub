@@ -43,6 +43,50 @@ main[tabindex="-1"]:focus {
     box-shadow: 0 0 0 3px var(--bs-primary);
 }
 
+/* Legenda dos gráficos do painel: o texto fica no HTML (acessível); a cor vem do JS. */
+.gohub-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8125rem;
+}
+
+.gohub-legenda__cor {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-inline-end: 0.375rem;
+    border-radius: 50%;
+    background-color: var(--bs-gray-400);
+    vertical-align: -0.0625rem;
+}
+
+/* Pares rótulo/valor (lista de descrição) em cards do painel. */
+.gohub-dados {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.375rem 1rem;
+    margin: 0;
+}
+
+.gohub-dados dt {
+    font-weight: 400;
+    color: var(--bs-gray-600);
+}
+
+.gohub-dados dd {
+    margin: 0;
+    color: var(--bs-body-color);
+}
+
+/* Formulários das páginas de perfil: largura de leitura confortável em telas grandes. */
+.gohub-form-perfil {
+    max-width: 32rem;
+}
+
 /* ==== Utilitários ==== */
 
 /* Permite usar <button> onde o tema usa <a href="#">, sem alterar a aparência. */

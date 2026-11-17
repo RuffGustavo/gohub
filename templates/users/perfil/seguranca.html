@@ -1,0 +1,34 @@
+{% extends "users/perfil/_base.html" %}
+{% comment %}
+    Troca de senha pelo próprio usuário (AlterarSenhaView, baseada no PasswordChangeView).
+{% endcomment %}
+
+{% block title %}Segurança | GoHub{% endblock %}
+{% block description %}Altere a senha da sua conta no GoHub.{% endblock %}
+
+{% block perfil_titulo %}Segurança{% endblock %}
+{% block perfil_descricao %}Altere sua senha. As outras sessões abertas da conta serão encerradas.{% endblock %}
+
+{% block perfil_conteudo %}
+    <div class="nk-block">
+        <div class="nk-data data-list mb-4">
+            <div class="data-head">
+                <h2 class="overline-title">Alterar senha</h2>
+            </div>
+        </div>
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+            </div>
+        {% endif %}
+        <form method="post" action="{% url 'users:perfil-seguranca' %}" class="gohub-form-perfil" novalidate>
+            {% csrf_token %}
+            {% include "partials/_campo_auth.html" with campo=form.old_password tipo="password" autocomplete="current-password" alternar_senha=True %}
+            {% include "partials/_campo_auth.html" with campo=form.new_password1 tipo="password" autocomplete="new-password" alternar_senha=True %}
+            {% include "partials/_campo_auth.html" with campo=form.new_password2 tipo="password" autocomplete="new-password" alternar_senha=True %}
+            <div class="form-group">
+                <button type="submit" class="btn btn-lg btn-primary">Alterar senha</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

@@ -4,10 +4,12 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.postgres.functions import RandomUUID
 from django.core.validators import MinLengthValidator, RegexValidator
-from django.db import models
+from django.db import models, transaction
+from django.db.models import Exists, OuterRef
 from django.db.models.functions import Length, Lower, Now, Trim
 from django.db.models.lookups import GreaterThanOrEqual
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 
 # Regras do DDL (.knowledge/leads_ddl.sql, tabela "usuario"), repetidas aqui para
 # validação amigável no formulário; o banco continua sendo a última barreira.
@@ -37,6 +39,12 @@ class UsuarioQuerySet(models.QuerySet):
     def ativos(self):
         return self.filter(is_active=True, deleted_at__isnull=True)
 
+    def sem_privilegio(self):
+        """Usuários sem nenhum privilégio (ver Usuario.tem_privilegio)."""
+        grupos = self.model.groups.through.objects.filter(usuario_id=OuterRef("pk"))
+        permissoes = self.model.user_permissions.through.objects.filter(usuario_id=OuterRef("pk"))
+        return self.filter(is_superuser=False).exclude(Exists(grupos)).exclude(Exists(permissoes))
+
 
 class UsuarioManager(BaseUserManager.from_queryset(UsuarioQuerySet)):
     use_in_migrations = True
@@ -64,7 +72,10 @@ class UsuarioManager(BaseUserManager.from_queryset(UsuarioQuerySet)):
 
 
 class Usuario(AbstractBaseUser, PermissionsMixin):
-    """Usuário interno da área administrativa (tabela "usuario" do MER).
+    """Usuário interno do sistema (tabela "usuario" do MER).
+
+    Entra pela área de acesso (users:login); o Django Admin fica restrito a quem tem
+    is_staff (ver a propriedade abaixo).
 
     Colunas do DDL mapeadas para os nomes que o Django espera:
     password → senha_hash, last_login → ultimo_login_em, is_active → ativo.
@@ -121,6 +132,9 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         ordering = ["nome"]
         verbose_name = "usuário"
         verbose_name_plural = "usuários"
+        permissions = [
+            ("acessar_admin", "Pode acessar a área administrativa (Django Admin)"),
+        ]
         constraints = [
             # Sem violation_error_message: assim o erro fica no campo, com error_messages["unique"].
             models.UniqueConstraint(fields=["username"], name="uq_usuario_username"),
@@ -158,9 +172,43 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     @property
     def is_staff(self):
-        # Todo usuário interno ativo entra na área administrativa (MER, requisito 2.5);
-        # o que ele vê e altera depende das permissões atribuídas.
-        return self.is_active and self.deleted_at is None
+        """Pode entrar no Django Admin (o admin exige is_active e is_staff).
+
+        Só superusuários e quem tem a permissão "users.acessar_admin" (direta ou por grupo).
+        Os demais usuários usam a área de acesso do sistema (users:login). O que cada um vê
+        e altera no admin continua dependendo das permissões de model atribuídas.
+        Conceder a permissão é restrito a superusuários (CAMPOS_DE_PRIVILEGIO no admin).
+        """
+        if not self.is_active or self.deleted_at is not None:
+            return False
+        return self.is_superuser or self.has_perm("users.acessar_admin")
+
+    def tem_privilegio(self):
+        """Superusuário, membro de algum grupo ou com alguma permissão direta.
+
+        Inclui o acesso ao admin (is_staff deriva de superusuário ou da permissão
+        "users.acessar_admin"). Só superusuários alteram contas com privilégio (R2).
+        """
+        if self.is_superuser or self.pk is None:
+            return self.is_superuser
+        return self.groups.exists() or self.user_permissions.exists()
+
+    def _get_session_auth_hash(self, secret=None):
+        # O Django deriva o hash da sessão só da senha; incluir o e-mail faz a troca de
+        # e-mail também encerrar todas as sessões abertas da pessoa (a troca de senha já encerra).
+        return salted_hmac(
+            "app.users.models.Usuario.get_session_auth_hash",
+            f"{self.password}\x00{self.email}",
+            secret=secret,
+            algorithm="sha256",
+        ).hexdigest()
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instancia = super().from_db(db, field_names, values)
+        # Valor gravado no banco, para detectar a troca de e-mail no save().
+        instancia._email_no_banco = getattr(instancia, "email", None) if "email" in field_names else None
+        return instancia
 
     def get_full_name(self):
         return self.nome
@@ -179,7 +227,39 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         self.username = normalizar_username(self.username)
         self.email = normalizar_email(self.email)
         self.nome = normalizar_nome(self.nome)
+        email_antigo = getattr(self, "_email_no_banco", None)
+        update_fields = kwargs.get("update_fields")
+        email_mudou = (
+            email_antigo is not None
+            and email_antigo != self.email
+            and (update_fields is None or "email" in update_fields)
+        )
+        # _password só fica preenchido após set_password(); o rehash automático do
+        # check_password o zera antes de salvar, então não conta como troca de senha.
+        senha_mudou = (
+            not self._state.adding
+            and self._password is not None
+            and (update_fields is None or "password" in update_fields)
+        )
         super().save(*args, **kwargs)
+        if email_mudou or senha_mudou:
+            self._agendar_avisos(email_antigo if email_mudou else None, senha_mudou)
+        self._email_no_banco = self.email
+
+    def _agendar_avisos(self, email_antigo, senha_mudou):
+        """Registra e avisa o titular depois do commit (nada é enviado se a transação falhar)."""
+        from .auditoria import registrar
+        from .avisos import avisar_troca_de_email, avisar_troca_de_senha
+
+        def avisar():
+            if email_antigo:
+                registrar("email_alterado", usuario=self)
+                avisar_troca_de_email(self, email_antigo)
+            if senha_mudou:
+                registrar("senha_alterada", usuario=self)
+                avisar_troca_de_senha(self)
+
+        transaction.on_commit(avisar)
 
     def excluir(self):
         """Exclusão lógica: históricos referenciam o usuário (FK ON DELETE RESTRICT)."""

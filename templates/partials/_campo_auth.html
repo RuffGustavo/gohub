@@ -1,0 +1,46 @@
+{% comment %}
+    Campo de formulário das telas de autenticação (padrão form-group do tema), com label,
+    erro acessível e ajuda. Parâmetros:
+        campo         BoundField (obrigatório)
+        tipo          type do <input> (padrão "text")
+        autocomplete  valor do atributo autocomplete
+        maxlength     limite coerente com o form (opcional)
+        autofocus     True para focar ao abrir a página
+        autocapitalize  valor do atributo (padrão "none"; use "words" em nomes)
+        alternar_senha True para o botão do tema que mostra/oculta a senha
+        link_url, link_texto  link ao lado do label (ex.: "Esqueceu a senha?")
+        descrito_por  id de um resumo de erros a ligar ao campo quando ele não tem erro próprio
+    Uso: {% include "partials/_campo_auth.html" with campo=form.username autocomplete="username" %}
+{% endcomment %}
+{% with id=campo.id_for_label %}
+    <div class="form-group">
+        <div class="form-label-group">
+            <label class="form-label" for="{{ id }}">{{ campo.label }}</label>
+            {% if link_url %}<a class="link link-primary link-sm" href="{{ link_url }}">{{ link_texto }}</a>{% endif %}
+        </div>
+        <div class="form-control-wrap">
+            {% if alternar_senha %}
+                <button type="button" class="form-icon form-icon-right passcode-switch lg gohub-btn-reset" data-target="{{ id }}" aria-controls="{{ id }}" aria-label="Mostrar ou ocultar a senha">
+                    <em class="passcode-icon icon-show icon ni ni-eye" aria-hidden="true"></em>
+                    <em class="passcode-icon icon-hide icon ni ni-eye-off" aria-hidden="true"></em>
+                </button>
+            {% endif %}
+            <input type="{{ tipo|default:'text' }}" name="{{ campo.html_name }}" id="{{ id }}"
+                   class="form-control form-control-lg{% if campo.errors %} is-invalid{% endif %}"
+                   {% if tipo != "password" %}value="{{ campo.value|default:'' }}"{% endif %}
+                   {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+                   {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+                   {% if tipo != "password" %}autocapitalize="{{ autocapitalize|default:'none' }}" spellcheck="false"{% endif %}
+                   {% if campo.field.required %}required{% endif %}
+                   {% if autofocus %}autofocus{% endif %}
+                   {% if campo.errors %}aria-invalid="true" aria-describedby="erro-{{ id }}{% if campo.help_text %} ajuda-{{ id }}{% endif %}"{% elif campo.help_text %}aria-describedby="ajuda-{{ id }}{% if descrito_por %} {{ descrito_por }}{% endif %}"{% elif descrito_por %}aria-describedby="{{ descrito_por }}"{% endif %}>
+            {% if campo.errors %}
+                <div class="invalid-feedback" id="erro-{{ id }}">{{ campo.errors|join:" " }}</div>
+            {% endif %}
+        </div>
+        {% if campo.help_text %}
+            {# help_text vem do Django (validadores de senha), não de dado do usuário. #}
+            <div class="form-note mt-1" id="ajuda-{{ id }}">{{ campo.help_text }}</div>
+        {% endif %}
+    </div>
+{% endwith %}

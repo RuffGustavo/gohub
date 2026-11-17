@@ -1,0 +1,192 @@
+{% extends "layouts/painel.html" %}
+{% load static %}
+{% comment %}
+    Dashboard do cliente (estrutura de templates/exemplos/index.html). Exige login (PainelView).
+    Indicadores, gráficos e atividades usam DADOS FICTÍCIOS (views.DADOS_EXEMPLO), identificados
+    na tela; o card "Sua conta" mostra dados reais do usuário autenticado.
+    Gráficos: Chart.js do bundle do tema, desenhados por assets/js/gohub/paginas/painel.js a partir
+    do json_script "dados-exemplo-painel".
+{% endcomment %}
+
+{% block title %}Painel | GoHub{% endblock %}
+{% block description %}Visão geral da sua conta no GoHub.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">Olá, {{ user.get_short_name }}</h1>
+                <div class="nk-block-des text-soft">
+                    <p>Bem-vindo ao GoHub. Aqui você acompanha a visão geral da sua conta.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="{% url 'users:perfil' %}" class="btn btn-white btn-dim btn-outline-light">
+                    <em class="icon ni ni-user-alt" aria-hidden="true"></em><span>Meu perfil</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="alert alert-pro alert-info" role="note">
+            <div class="alert-text">
+                <h2 class="h6">Dados de exemplo</h2>
+                <p>Os indicadores, gráficos e atividades desta página são fictícios e servem apenas para demonstrar o layout. Eles serão substituídos pelos dados reais conforme os módulos do sistema forem implementados.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            {% for item in indicadores_exemplo %}
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <div class="card-title-group align-start mb-2">
+                                <div class="card-title">
+                                    <h2 class="title h6">{{ item.titulo }}</h2>
+                                </div>
+                                <div class="card-tools">
+                                    <span class="badge badge-dim bg-gray">Exemplo</span>
+                                </div>
+                            </div>
+                            <div class="align-end flex-sm-wrap g-4 flex-md-nowrap">
+                                <div class="nk-sale-data">
+                                    <span class="amount">{{ item.valor }}</span>
+                                    <span class="sub-title">
+                                        <em class="icon ni {% if item.subiu %}ni-arrow-long-up text-success{% else %}ni-arrow-long-down text-danger{% endif %}" aria-hidden="true"></em>
+                                        {% if item.subiu %}Alta{% else %}Queda{% endif %} de {{ item.variacao }} em relação ao período anterior
+                                    </span>
+                                </div>
+                                {% if forloop.first %}
+                                    <div class="nk-sales-ck">
+                                        <canvas data-gohub-grafico="acessos" role="img" aria-label="Gráfico de barras de exemplo com os acessos de cada dia da semana"></canvas>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div class="col-xxl-8 col-lg-7">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start gx-3 mb-3">
+                            <div class="card-title">
+                                <h2 class="title h6">Evolução das tarefas</h2>
+                                <p>Tarefas concluídas e em andamento nos últimos 6 meses.</p>
+                            </div>
+                            <div class="card-tools">
+                                <span class="badge badge-dim bg-gray">Exemplo</span>
+                            </div>
+                        </div>
+                        <div class="nk-sales-ck large pt-4">
+                            <canvas data-gohub-grafico="evolucao" role="img" aria-label="Gráfico de linhas de exemplo com a evolução mensal das tarefas concluídas e em andamento"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-4 col-lg-5">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-3">
+                            <div class="card-title">
+                                <h2 class="title h6">Distribuição por situação</h2>
+                            </div>
+                            <div class="card-tools">
+                                <span class="badge badge-dim bg-gray">Exemplo</span>
+                            </div>
+                        </div>
+                        <div class="nk-ck-sm">
+                            <canvas data-gohub-grafico="distribuicao" role="img" aria-label="Gráfico de rosca de exemplo com a distribuição das tarefas por situação"></canvas>
+                        </div>
+                        <ul class="gohub-legenda mt-3">
+                            {% for rotulo, valor in legenda_distribuicao %}
+                                <li><span class="gohub-legenda__cor" data-gohub-legenda="{{ forloop.counter0 }}" aria-hidden="true"></span>{{ rotulo }}: {{ valor }}%</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-8 col-lg-7">
+                <div class="card card-bordered card-full">
+                    <div class="card-inner">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <h2 class="title h6">Atividades recentes</h2>
+                            </div>
+                            <div class="card-tools">
+                                <span class="badge badge-dim bg-gray">Exemplo</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-inner p-0 border-top">
+                        <table class="nk-tb-list nk-tb-orders">
+                            <caption class="visually-hidden">Atividades recentes (dados de exemplo)</caption>
+                            <thead>
+                                <tr class="nk-tb-item nk-tb-head">
+                                    <th scope="col" class="nk-tb-col fw-normal"><span>Atividade</span></th>
+                                    <th scope="col" class="nk-tb-col tb-col-sm fw-normal"><span>Quando</span></th>
+                                    <th scope="col" class="nk-tb-col fw-normal"><span>Situação</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for atividade in atividades_exemplo %}
+                                    <tr class="nk-tb-item">
+                                        <td class="nk-tb-col"><span class="tb-lead">{{ atividade.descricao }}</span></td>
+                                        <td class="nk-tb-col tb-col-sm"><span class="tb-sub">{{ atividade.quando }}</span></td>
+                                        <td class="nk-tb-col"><span class="badge badge-dot badge-dot-xs bg-{{ atividade.cor }}">{{ atividade.situacao }}</span></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-4 col-lg-5">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <div class="card-title-group align-start mb-3">
+                            <div class="card-title">
+                                <h2 class="title h6">Sua conta</h2>
+                            </div>
+                        </div>
+                        <div class="user-card mb-3">
+                            <div class="user-avatar bg-primary" aria-hidden="true">
+                                <span>{{ user.get_username|slice:":2"|upper }}</span>
+                            </div>
+                            <div class="user-info">
+                                <span class="lead-text">{{ user.get_full_name }}</span>
+                                <span class="sub-text">{{ user.email }}</span>
+                            </div>
+                        </div>
+                        <dl class="gohub-dados mb-3">
+                            <dt>Nome de usuário</dt>
+                            <dd>{{ user.get_username }}</dd>
+                            <dt>Último acesso</dt>
+                            <dd>{{ user.last_login|date:"d/m/Y H:i"|default:"—" }}</dd>
+                            <dt>Membro desde</dt>
+                            <dd>{{ user.created_at|date:"d/m/Y"|default:"—" }}</dd>
+                        </dl>
+                        <a href="{% url 'users:perfil-editar' %}" class="btn btn-primary btn-dim">
+                            <em class="icon ni ni-edit" aria-hidden="true"></em><span>Editar meus dados</span>
+                        </a>
+                        {% if user.is_staff %}
+                            <a href="{% url 'admin:index' %}" class="btn btn-outline-light ms-1 mt-1 mt-sm-0">
+                                <em class="icon ni ni-setting" aria-hidden="true"></em><span>Área administrativa</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ dados_exemplo|json_script:"dados-exemplo-painel" }}
+{% endblock %}
+
+{% block js_extra %}<script type="module" src="{% static 'assets/js/gohub/paginas/painel.js' %}"></script>{% endblock %}

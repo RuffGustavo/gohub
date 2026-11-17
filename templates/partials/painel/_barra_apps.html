@@ -1,13 +1,22 @@
 <div class="nk-apps-sidebar is-theme">
     <div class="nk-apps-brand">
-        {# Sem rota inicial definida ainda: a marca não é link. Use {% url %} quando existir. #}
-        <span class="logo-link text-white fw-bold">GoHub</span>
+        <a href="{% url 'users:painel' %}" class="logo-link text-white fw-bold">GoHub</a>
     </div>
     <div class="nk-sidebar-element">
         <div class="nk-sidebar-body">
             <div class="nk-sidebar-content" data-simplebar>
                 <nav class="nk-sidebar-menu" aria-label="Aplicativos">
                     <ul class="nk-menu apps-menu">
+                        <li class="nk-menu-item">
+                            <a href="{% url 'users:painel' %}" class="nk-menu-link" aria-label="Painel" title="Painel">
+                                <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-dashboard"></em></span>
+                            </a>
+                        </li>
+                        <li class="nk-menu-item">
+                            <a href="{% url 'users:perfil' %}" class="nk-menu-link" aria-label="Meu perfil" title="Meu perfil">
+                                <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-user-alt"></em></span>
+                            </a>
+                        </li>
                         {% comment %}
                             Atalhos de módulos (ícone apenas, por isso aria-label obrigatório). Exemplo:
                             <li class="nk-menu-item">

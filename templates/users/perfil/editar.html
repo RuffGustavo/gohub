@@ -1,0 +1,33 @@
+{% extends "users/perfil/_base.html" %}
+{% comment %}
+    Edição de nome e e-mail (PerfilForm). Trocar o e-mail exige a senha atual, encerra as outras
+    sessões e avisa o endereço antigo.
+{% endcomment %}
+
+{% block title %}Editar meus dados | GoHub{% endblock %}
+{% block description %}Atualize seu nome e e-mail no GoHub.{% endblock %}
+
+{% block perfil_titulo %}Editar meus dados{% endblock %}
+{% block perfil_descricao %}Atualize seu nome e e-mail. O nome de usuário é definido pela administração.{% endblock %}
+
+{% block perfil_conteudo %}
+    <div class="nk-block">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+            </div>
+        {% endif %}
+        <form method="post" action="{% url 'users:perfil-editar' %}" class="gohub-form-perfil" novalidate>
+            {% csrf_token %}
+            {% include "partials/_campo_auth.html" with campo=form.nome autocomplete="name" autocapitalize="words" maxlength=150 %}
+            {% include "partials/_campo_auth.html" with campo=form.email tipo="email" autocomplete="email" maxlength=254 %}
+            {% include "partials/_campo_auth.html" with campo=form.senha_atual tipo="password" autocomplete="current-password" alternar_senha=True %}
+            <div class="form-group">
+                <ul class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">
+                    <li><button type="submit" class="btn btn-lg btn-primary">Salvar alterações</button></li>
+                    <li><a href="{% url 'users:perfil' %}" class="link link-light">Cancelar</a></li>
+                </ul>
+            </div>
+        </form>
+    </div>
+{% endblock %}

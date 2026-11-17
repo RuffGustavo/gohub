@@ -1,0 +1,45 @@
+{% extends "layouts/auth.html" %}
+{% comment %}
+    Definição da nova senha a partir do link do e-mail (layout de auth-reset.html).
+    validlink vem do PasswordResetConfirmView: link expirado, já usado ou adulterado → False.
+{% endcomment %}
+
+{% block title %}Criar nova senha | GoHub{% endblock %}
+{% block description %}Defina uma nova senha para a sua conta do GoHub.{% endblock %}
+
+{% block auth_coluna_classe %} w-lg-45{% endblock %}
+
+{% block auth_titulo %}{% if validlink %}Criar nova senha{% else %}Link inválido{% endif %}{% endblock %}
+
+{% block auth_descricao %}
+    {% if validlink %}
+        <p>Escolha uma nova senha para a sua conta.</p>
+    {% else %}
+        <p role="alert">Este link de redefinição é inválido, expirou ou já foi usado. Peça um novo link.</p>
+    {% endif %}
+{% endblock %}
+
+{% block auth_conteudo %}
+    {% if validlink %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for erro in form.non_field_errors %}{{ erro }}{% endfor %}
+            </div>
+        {% endif %}
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% include "partials/_campo_auth.html" with campo=form.new_password1 tipo="password" autocomplete="new-password" alternar_senha=True autofocus=True %}
+            {% include "partials/_campo_auth.html" with campo=form.new_password2 tipo="password" autocomplete="new-password" alternar_senha=True %}
+            <div class="form-group">
+                <button type="submit" class="btn btn-lg btn-primary btn-block">Salvar nova senha</button>
+            </div>
+        </form>
+    {% else %}
+        <div class="form-group">
+            <a href="{% url 'users:redefinir-senha' %}" class="btn btn-lg btn-primary btn-block">Pedir novo link</a>
+        </div>
+    {% endif %}
+    <div class="form-note-s2 pt-5">
+        <a href="{% url 'users:login' %}"><strong>Voltar para o login</strong></a>
+    </div>
+{% endblock %}

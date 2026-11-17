@@ -87,9 +87,29 @@ DATABASES = {
 # Usuário interno da tabela "usuario" (MER). Definido antes do primeiro migrate.
 AUTH_USER_MODEL = "users.Usuario"
 
+# Área de acesso dos usuários (app.users). O Django Admin (/admin/) tem login próprio e só
+# aceita quem tem is_staff (superusuário ou permissão "users.acessar_admin").
+# Login do cliente na página inicial (/); depois dele, o dashboard.
 LOGIN_URL = "users:login"
-# Ainda não há painel de domínio; a área administrativa é o destino após o login.
-LOGIN_REDIRECT_URL = "admin:index"
+LOGIN_REDIRECT_URL = "users:painel"
+
+# Validade do link de redefinição de senha, em segundos (padrão do Django: 3 dias).
+PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "3600"))
+
+# E-mail (redefinição de senha). Com DEBUG, o padrão é o backend de console (o e-mail, com o
+# link, aparece no terminal); sem DEBUG, SMTP, configurado pelas variáveis EMAIL_*.
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or (
+    "django.core.mail.backends.console.EmailBackend" if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "GoHub <nao-responda@localhost>")
 
 # Argon2id como padrão (MER, regras A5/B14; argon2-cffi já está em requirements.txt).
 # PBKDF2 permanece para verificar hashes nesse formato.

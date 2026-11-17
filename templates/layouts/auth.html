@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+{% comment %}
+    Layout das telas de autenticação (estrutura de templates/exemplos/pages/auths/auth-login.html,
+    auth-reset.html e auth-success.html): coluna do formulário à esquerda e painel de apresentação
+    à direita (no celular, aberto pelo botão de informação).
+    Telas anteriores ao login: sem menus nem dados do usuário. Uso:
+        {% extends "layouts/auth.html" %}
+        {% block title %}Entrar | GoHub{% endblock %}
+        {% block auth_titulo %}Entrar{% endblock %}
+        {% block auth_descricao %}<p>…</p>{% endblock %}
+        {% block auth_conteudo %}<form>…</form>{% endblock %}
+{% endcomment %}
+
+{% block meta_extra %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block body_class %}nk-body bg-white npc-general ui-shady pg-auth{% endblock %}
+
+{% block body %}
+    <div class="nk-app-root">
+        <div class="nk-main">
+            <div class="nk-wrap nk-wrap-nosidebar">
+                <div class="nk-content">
+                    <div class="nk-split nk-split-page nk-split-lg">
+                        <div class="nk-split-content nk-block-area nk-block-area-column nk-auth-container bg-white{% block auth_coluna_classe %}{% endblock %}">
+                            <div class="absolute-top-right d-lg-none p-3 p-sm-5">
+                                <button type="button" class="toggle btn btn-white btn-icon btn-light" data-target="athPromo" aria-controls="auth-apresentacao" aria-label="Sobre o GoHub">
+                                    <em class="icon ni ni-info" aria-hidden="true"></em>
+                                </button>
+                            </div>
+                            <main id="conteudo" class="nk-block nk-block-middle nk-auth-body" tabindex="-1">
+                                <div class="brand-logo pb-5">
+                                    <span class="logo-link fs-3 fw-bold text-primary">GoHub</span>
+                                </div>
+                                <div class="nk-block-head">
+                                    <div class="nk-block-head-content">
+                                        <h1 class="nk-block-title h5">{% block auth_titulo %}{% endblock %}</h1>
+                                        <div class="nk-block-des">
+                                            {% block auth_descricao %}{% endblock %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% include "partials/_mensagens.html" %}
+                                {% block auth_conteudo %}{% endblock %}
+                            </main>
+                            <footer class="nk-block nk-auth-footer">
+                                <div class="mt-3">
+                                    <p>&copy; {% now "Y" %} GoHub. Todos os direitos reservados.</p>
+                                </div>
+                            </footer>
+                        </div>
+                        <aside id="auth-apresentacao" class="nk-split-content nk-split-stretch bg-lighter d-flex toggle-break-lg toggle-slide toggle-slide-right" data-toggle-body="true" data-content="athPromo" data-toggle-screen="lg" data-toggle-overlay="true" aria-label="Sobre o GoHub">
+                            <div class="slider-wrap w-100 w-max-550px p-3 p-sm-5 m-auto">
+                                <div class="slider-init" data-slick='{"dots":true, "arrows":false}'>
+                                    <div class="slider-item">
+                                        <div class="nk-feature nk-feature-center">
+                                            <div class="nk-feature-img">
+                                                <img class="round" src="{% static 'images/slides/promo-a.png' %}" srcset="{% static 'images/slides/promo-a2x.png' %} 2x" width="460" height="380" alt="">
+                                            </div>
+                                            <div class="nk-feature-content py-4 p-sm-5">
+                                                <p class="h4">GoHub</p>
+                                                <p>Acesse o sistema com sua conta e acompanhe seu trabalho em um só lugar.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slider-item">
+                                        <div class="nk-feature nk-feature-center">
+                                            <div class="nk-feature-img">
+                                                <img class="round" src="{% static 'images/slides/promo-b.png' %}" srcset="{% static 'images/slides/promo-b2x.png' %} 2x" width="460" height="380" alt="" loading="lazy">
+                                            </div>
+                                            <div class="nk-feature-content py-4 p-sm-5">
+                                                <p class="h4">Acesso seguro</p>
+                                                <p>Sua sessão é protegida e cada pessoa vê apenas o que tem permissão para ver.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slider-item">
+                                        <div class="nk-feature nk-feature-center">
+                                            <div class="nk-feature-img">
+                                                <img class="round" src="{% static 'images/slides/promo-c.png' %}" srcset="{% static 'images/slides/promo-c2x.png' %} 2x" width="460" height="380" alt="" loading="lazy">
+                                            </div>
+                                            <div class="nk-feature-content py-4 p-sm-5">
+                                                <p class="h4">Esqueceu a senha?</p>
+                                                <p>Redefina pelo e-mail cadastrado em poucos passos, sem precisar de suporte.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slider-dots"></div>
+                                <div class="slider-arrows"></div>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

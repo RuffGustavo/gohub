@@ -1,0 +1,10 @@
+{% autoescape off %}Olá, {{ usuario.get_short_name }}.
+
+A senha da sua conta no GoHub ({{ usuario.get_username }}) foi alterada em {{ quando|date:"d/m/Y \à\s H:i" }}.
+Por segurança, todas as sessões abertas da conta foram encerradas.
+
+Se não foi você, redefina sua senha pela página de login ("Esqueceu a senha?") e avise
+imediatamente um administrador do sistema.
+
+Equipe GoHub
+{% endautoescape %}

@@ -1,0 +1,10 @@
+{% autoescape off %}Olá, {{ usuario.get_short_name }}.
+
+O e-mail da sua conta no GoHub ({{ usuario.get_username }}) foi alterado para {{ email_novo_mascarado }}
+em {{ quando|date:"d/m/Y \à\s H:i" }}. Por segurança, todas as sessões abertas da conta foram encerradas.
+
+Se você não reconhece esta alteração, avise imediatamente um administrador do sistema.
+Este é o último aviso enviado para este endereço.
+
+Equipe GoHub
+{% endautoescape %}

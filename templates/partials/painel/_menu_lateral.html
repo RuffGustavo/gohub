@@ -19,6 +19,41 @@
 
                 Ocultar um item não é autorização: a view correspondente valida permissão.
             {% endcomment %}
+            {% with atual=request.resolver_match.view_name %}
+            <li class="nk-menu-item{% if atual == 'users:painel' %} active current-page{% endif %}">
+                <a href="{% url 'users:painel' %}" class="nk-menu-link"{% if atual == 'users:painel' %} aria-current="page"{% endif %}>
+                    <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-dashboard"></em></span>
+                    <span class="nk-menu-text">Painel</span>
+                </a>
+            </li>
+            <li class="nk-menu-heading">
+                <span class="overline-title text-primary-alt">Minha conta</span>
+            </li>
+            <li class="nk-menu-item{% if atual == 'users:perfil' or atual == 'users:perfil-editar' %} active current-page{% endif %}">
+                <a href="{% url 'users:perfil' %}" class="nk-menu-link"{% if atual == 'users:perfil' %} aria-current="page"{% endif %}>
+                    <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-user-alt"></em></span>
+                    <span class="nk-menu-text">Meu perfil</span>
+                </a>
+            </li>
+            <li class="nk-menu-item{% if atual == 'users:perfil-seguranca' %} active current-page{% endif %}">
+                <a href="{% url 'users:perfil-seguranca' %}" class="nk-menu-link"{% if atual == 'users:perfil-seguranca' %} aria-current="page"{% endif %}>
+                    <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-lock-alt"></em></span>
+                    <span class="nk-menu-text">Segurança</span>
+                </a>
+            </li>
+            {% endwith %}
+            {% if user.is_staff %}
+                {# Atalho só para quem já tem acesso; o próprio admin valida a permissão. #}
+                <li class="nk-menu-heading">
+                    <span class="overline-title text-primary-alt">Administração</span>
+                </li>
+                <li class="nk-menu-item">
+                    <a href="{% url 'admin:index' %}" class="nk-menu-link">
+                        <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-setting"></em></span>
+                        <span class="nk-menu-text">Área administrativa</span>
+                    </a>
+                </li>
+            {% endif %}
         </ul>
     </div>
 </nav>

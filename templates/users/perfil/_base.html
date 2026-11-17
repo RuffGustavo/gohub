@@ -1,0 +1,67 @@
+{% extends "layouts/painel.html" %}
+{% comment %}
+    Layout das páginas de perfil (estrutura de templates/exemplos/user-profile-regular.html):
+    conteúdo à esquerda e menu do perfil à direita (no celular, aberto pelo botão de menu).
+    Sempre mostra a conta do usuário autenticado (as views usam request.user).
+    Blocos: perfil_titulo, perfil_descricao, perfil_conteudo.
+{% endcomment %}
+
+{% block content %}
+    {% with atual=request.resolver_match.view_name %}
+    <div class="nk-block">
+        <div class="card card-bordered">
+            <div class="card-aside-wrap">
+                <div class="card-inner card-inner-lg">
+                    <div class="nk-block-head nk-block-head-lg">
+                        <div class="nk-block-between">
+                            <div class="nk-block-head-content">
+                                <h1 class="nk-block-title h4">{% block perfil_titulo %}{% endblock %}</h1>
+                                <div class="nk-block-des">
+                                    <p>{% block perfil_descricao %}{% endblock %}</p>
+                                </div>
+                            </div>
+                            <div class="nk-block-head-content align-self-start d-lg-none">
+                                <button type="button" class="toggle btn btn-icon btn-trigger mt-n1" data-target="userAside" aria-controls="menu-perfil" aria-label="Abrir o menu do perfil">
+                                    <em class="icon ni ni-menu-alt-r" aria-hidden="true"></em>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% block perfil_conteudo %}{% endblock %}
+                </div>
+                <aside id="menu-perfil" class="card-aside card-aside-left user-aside toggle-slide toggle-slide-left toggle-break-lg" data-toggle-body="true" data-content="userAside" data-toggle-screen="lg" data-toggle-overlay="true" aria-label="Menu do perfil">
+                    <div class="card-inner-group" data-simplebar>
+                        <div class="card-inner">
+                            <div class="user-card">
+                                <div class="user-avatar bg-primary" aria-hidden="true">
+                                    <span>{{ user.get_username|slice:":2"|upper }}</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="lead-text">{{ user.get_full_name }}</span>
+                                    <span class="sub-text">{{ user.email }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-inner p-0">
+                            <nav aria-label="Seções do perfil">
+                                <ul class="link-list-menu">
+                                    <li>
+                                        <a {% if atual == 'users:perfil' or atual == 'users:perfil-editar' %}class="active" aria-current="page" {% endif %}href="{% url 'users:perfil' %}">
+                                            <em class="icon ni ni-user-fill-c" aria-hidden="true"></em><span>Informações pessoais</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a {% if atual == 'users:perfil-seguranca' %}class="active" aria-current="page" {% endif %}href="{% url 'users:perfil-seguranca' %}">
+                                            <em class="icon ni ni-lock-alt-fill" aria-hidden="true"></em><span>Segurança</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+{% endblock %}

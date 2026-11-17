@@ -34,6 +34,12 @@
                                     </div>
                                 </div>
                                 <div class="dropdown-inner">
+                                    <ul class="link-list">
+                                        <li><a href="{% url 'users:perfil' %}"><em class="icon ni ni-user-alt" aria-hidden="true"></em><span>Meu perfil</span></a></li>
+                                        <li><a href="{% url 'users:perfil-seguranca' %}"><em class="icon ni ni-lock-alt" aria-hidden="true"></em><span>Segurança</span></a></li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown-inner">
                                     <form method="post" action="{% url 'users:logout' %}">
                                         {% csrf_token %}
                                         <ul class="link-list">

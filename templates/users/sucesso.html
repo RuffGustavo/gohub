@@ -1,0 +1,23 @@
+{% extends "layouts/auth.html" %}
+{% comment %}
+    Confirmação de sucesso (base: templates/exemplos/pages/auths/auth-success.html).
+    Reutilizada nas etapas "link enviado" e "senha redefinida"; a view fornece titulo e mensagem
+    (textos fixos definidos no servidor, em extra_context).
+{% endcomment %}
+
+{% block title %}{{ titulo }} | GoHub{% endblock %}
+{% block description %}{{ titulo }} no GoHub.{% endblock %}
+
+{% block auth_coluna_classe %} w-lg-45{% endblock %}
+
+{% block auth_titulo %}{{ titulo }}{% endblock %}
+{% block auth_descricao %}
+    {# O verde do tema (text-success) tem contraste baixo em fundo branco: fica só no ícone. #}
+    <p role="status"><em class="icon ni ni-check-circle-fill text-success me-1" aria-hidden="true"></em>{{ mensagem }}</p>
+{% endblock %}
+
+{% block auth_conteudo %}
+    <div class="form-note-s2 pt-4">
+        <a href="{% url 'users:login' %}"><strong>Ir para o login</strong></a>
+    </div>
+{% endblock %}

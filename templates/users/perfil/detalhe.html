@@ -1,0 +1,66 @@
+{% extends "users/perfil/_base.html" %}
+
+{% block title %}Meu perfil | GoHub{% endblock %}
+{% block description %}Seus dados cadastrais no GoHub.{% endblock %}
+
+{% block perfil_titulo %}Informações pessoais{% endblock %}
+{% block perfil_descricao %}Dados da sua conta no GoHub.{% endblock %}
+
+{% block perfil_conteudo %}
+    <div class="nk-block">
+        <div class="nk-data data-list">
+            <div class="data-head">
+                <h2 class="overline-title">Dados básicos</h2>
+            </div>
+            <div class="data-item">
+                <div class="data-col">
+                    <span class="data-label">Nome</span>
+                    <span class="data-value">{{ user.nome }}</span>
+                </div>
+            </div>
+            <div class="data-item">
+                <div class="data-col">
+                    <span class="data-label">E-mail</span>
+                    <span class="data-value">{{ user.email }}</span>
+                </div>
+            </div>
+            <div class="data-item">
+                <div class="data-col">
+                    <span class="data-label">Nome de usuário</span>
+                    <span class="data-value">{{ user.get_username }}</span>
+                </div>
+                <div class="data-col data-col-end">
+                    <span class="data-more disable" title="Definido pela administração"><em class="icon ni ni-lock-alt" aria-hidden="true"></em><span class="visually-hidden">Não editável: definido pela administração</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="nk-data data-list">
+            <div class="data-head">
+                <h2 class="overline-title">Conta</h2>
+            </div>
+            <div class="data-item">
+                <div class="data-col">
+                    <span class="data-label">Último acesso</span>
+                    <span class="data-value">{{ user.last_login|date:"d/m/Y H:i"|default:"—" }}</span>
+                </div>
+            </div>
+            <div class="data-item">
+                <div class="data-col">
+                    <span class="data-label">Membro desde</span>
+                    <span class="data-value">{{ user.created_at|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+            </div>
+            <div class="data-item">
+                <div class="data-col">
+                    <span class="data-label">Acesso à área administrativa</span>
+                    <span class="data-value">{% if user.is_staff %}Sim{% else %}Não{% endif %}</span>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4">
+            <a href="{% url 'users:perfil-editar' %}" class="btn btn-primary">
+                <em class="icon ni ni-edit" aria-hidden="true"></em><span>Editar meus dados</span>
+            </a>
+        </div>
+    </div>
+{% endblock %}
