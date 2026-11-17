@@ -1,0 +1,11 @@
+{% if messages %}
+    <div class="gohub-mensagens">
+        {% for message in messages %}
+            {% if message.level_tag == "error" %}
+                <div class="alert alert-danger" role="alert">{{ message }}</div>
+            {% else %}
+                <div class="alert alert-{{ message.level_tag|default:'info' }}" role="status">{{ message }}</div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}

@@ -1,0 +1,31 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR" class="js">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}GoHub{% endblock %}</title>
+    <meta name="description" content="{% block description %}Painel do GoHub.{% endblock %}">
+    {% block meta_extra %}{% endblock %}
+    <link rel="icon" href="{% static 'images/favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/dashlite.css' %}">
+    <link id="skin-default" rel="stylesheet" href="{% static 'assets/css/theme.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/gohub.css' %}">
+    {% block css_extra %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}nk-body npc-default{% endblock %}">
+    {% comment %}
+        Documento HTML comum a todas as páginas.
+        - Páginas do painel estendem "layouts/painel.html" (que já fornece <main id="conteudo">).
+        - Quem estender este arquivo diretamente deve fornecer um <main id="conteudo"> no bloco "body".
+        - CSS/JS específicos de uma página vão em "css_extra"/"js_extra", nunca aqui.
+    {% endcomment %}
+    <a class="gohub-skip-link visually-hidden-focusable" href="#conteudo">Pular para o conteúdo</a>
+    {% block body %}{% endblock %}
+    <script src="{% static 'assets/js/bundle.js' %}"></script>
+    <script src="{% static 'assets/js/scripts.js' %}"></script>
+    {% block js_extra %}{% endblock %}
+</body>
+
+</html>

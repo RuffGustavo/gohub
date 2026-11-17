@@ -1,0 +1,86 @@
+# Configuração-base do GoHub (web, worker e beat compartilham a mesma imagem).
+#
+# Postgres, Redis e MinIO NÃO são definidos aqui: rodam em stacks próprias,
+# compartilhadas pela rede externa "network_public". Por isso não há
+# depends_on para eles (depends_on só enxerga serviços deste projeto); a
+# disponibilidade é verificada pelo entrypoint (WAIT_FOR) e pela reconexão
+# nativa de Django/Celery.
+#
+# Desenvolvimento: docker compose up            (aplica docker-compose.override.yml)
+# Produção:        docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+name: gohub
+
+x-app: &app
+  image: ${GOHUB_IMAGE:-gohub}:${GOHUB_TAG:-dev}
+  build:
+    context: .
+  env_file: .env
+  # Endereços dentro da rede Docker. Sobrescrevem os valores do .env, que
+  # apontam para localhost para uso fora de containers (venv local).
+  environment: &app-env
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    MINIO_ENDPOINT: minio:9000
+  init: true
+  networks:
+    - network_public
+
+services:
+  web:
+    <<: *app
+    environment:
+      <<: *app-env
+      WAIT_FOR: postgres:5432
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      # /health/ é servido pelo Django; falha em qualquer status != 2xx.
+      # Requer 127.0.0.1 em DJANGO_ALLOWED_HOSTS.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      start_interval: 3s
+
+  worker:
+    <<: *app
+    command: ["celery", "-A", "setup", "worker", "--loglevel=INFO"]
+    environment:
+      <<: *app-env
+      WAIT_FOR: redis:6379
+    # Warm shutdown: o Celery termina as tarefas em andamento após SIGTERM.
+    stop_grace_period: 60s
+    healthcheck:
+      # Ping pelo broker: confirma que ESTE worker está conectado ao Redis e respondendo.
+      test: ["CMD-SHELL", "celery -A setup inspect ping --destination \"celery@$$HOSTNAME\" --timeout 10"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+
+  beat:
+    <<: *app
+    # Deve existir exatamente UMA instância de beat (não escalar este serviço).
+    # Sem healthcheck: o Celery não oferece um mecanismo confiável para o beat;
+    # falhas encerram o processo e são visíveis no status/logs do container.
+    command: ["celery", "-A", "setup", "beat", "--loglevel=INFO", "--schedule=/data/celerybeat/schedule"]
+    environment:
+      <<: *app-env
+      WAIT_FOR: redis:6379
+    volumes:
+      - beat_data:/data/celerybeat
+
+volumes:
+  beat_data:
+
+networks:
+  network_public:
+    external: true

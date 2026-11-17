@@ -1,0 +1,73 @@
+/*
+ * Estilos próprios do GoHub sobre o tema DashLite (Bootstrap 5.3).
+ * Não edite dashlite.css/theme.css: sobrescreva aqui. Carregado em templates/base.html após o tema.
+ * Padrões: .claude/rules/css.md. Seções: tokens → base → componentes → utilitários → preferências.
+ */
+
+/* ==== Tokens ==== */
+/* Use as variáveis --bs-* do tema; declare --gohub-* aqui só quando não houver equivalente. */
+:root {
+    --gohub-focus-ring-width: 2px;
+    --gohub-focus-ring-offset: 2px;
+}
+
+/* ==== Base ==== */
+
+/*
+ * Foco visível em navegação por teclado (WCAG 2.4.7). O tema remove indicadores
+ * em vários seletores (ex.: .nk-quick-nav-icon:focus { box-shadow: none }), por isso o !important.
+ * Campos de formulário mantêm o indicador próprio do tema.
+ */
+:is(a, button, summary, [tabindex]):focus-visible {
+    outline: var(--gohub-focus-ring-width) solid var(--bs-primary) !important;
+    outline-offset: var(--gohub-focus-ring-offset);
+}
+
+/* <main tabindex="-1"> recebe foco pelo skip link, mas não é controle interativo. */
+main[tabindex="-1"]:focus {
+    outline: none !important;
+}
+
+/* ==== Componentes ==== */
+
+/* Link "Pular para o conteúdo": invisível até receber foco (classe Bootstrap visually-hidden-focusable). */
+.gohub-skip-link:focus {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 1100; /* acima do header fixo e da sidebar do tema */
+    padding: 0.5rem 1rem;
+    background-color: var(--bs-white);
+    color: var(--bs-secondary);
+    border-radius: var(--bs-border-radius);
+    box-shadow: 0 0 0 3px var(--bs-primary);
+}
+
+/* ==== Utilitários ==== */
+
+/* Permite usar <button> onde o tema usa <a href="#">, sem alterar a aparência. */
+.gohub-btn-reset {
+    background: none;
+    border: 0;
+}
+
+.gohub-btn-reset:not(.nk-quick-nav-icon) {
+    padding: 0;
+}
+
+/* ==== Preferências do usuário ==== */
+
+/*
+ * O Bootstrap só respeita movimento reduzido nos próprios componentes; as transições do
+ * DashLite (sidebar, menus, cards) não. Animações via jQuery (scripts.js) não são afetadas.
+ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

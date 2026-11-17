@@ -1,0 +1,28 @@
+# Produção: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Usa a imagem publicada (sem build local, sem código montado) e Gunicorn (CMD da imagem).
+# GOHUB_IMAGE e GOHUB_TAG são obrigatórios (ex.: no .env do servidor).
+
+x-prod: &prod
+  image: ${GOHUB_IMAGE:?defina GOHUB_IMAGE, ex. usuario/gohub}:${GOHUB_TAG:?defina GOHUB_TAG, ex. 0.1.0}
+  build: !reset null
+  pull_policy: missing
+  restart: unless-stopped
+  environment:
+    DJANGO_DEBUG: "false"
+
+services:
+  web:
+    <<: *prod
+    volumes:
+      - media_data:/app/media
+
+  worker:
+    <<: *prod
+    volumes:
+      - media_data:/app/media
+
+  beat:
+    <<: *prod
+
+volumes:
+  media_data:

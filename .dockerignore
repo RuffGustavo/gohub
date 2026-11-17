@@ -1,0 +1,49 @@
+# Contexto de build mínimo: só o necessário para instalar dependências e rodar a aplicação.
+
+# Segredos e configuração local (o exemplo é mantido como documentação)
+.env
+.env.*
+!.env.example
+
+# Controle de versão e IDE
+.git
+.gitignore
+.vscode/
+.idea/
+
+# Ambientes virtuais e dependências locais
+.venv/
+venv/
+env/
+__pypackages__/
+
+# Cache, bytecode e artefatos de ferramentas
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+*.log
+
+# Arquivos gerados localmente (static é gerado no build; media é volume)
+/static/
+/media/
+db.sqlite3
+celerybeat-schedule*
+celerybeat.pid
+build/
+dist/
+*.egg-info/
+
+# Metadados do Windows
+**/*:Zone.Identifier
+
+# Infra do Docker (não precisa estar dentro da imagem)
+Dockerfile
+.dockerignore
+docker-compose*.yml

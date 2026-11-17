@@ -1,0 +1,24 @@
+<nav class="nk-sidebar" id="menu-lateral" data-content="sidebarMenu" aria-label="Menu principal">
+    <div class="nk-sidebar-inner" data-simplebar>
+        <ul class="nk-menu nk-menu-md">
+            {% comment %}
+                Itens do menu principal. Grupo: use <span>, não <h6> (o <h1> da página vem depois no DOM).
+                Item ativo: compare com request.resolver_match.url_name e marque aria-current. Exemplo:
+
+                <li class="nk-menu-heading">
+                    <span class="overline-title text-primary-alt">Cadastros</span>
+                </li>
+                {% with atual=request.resolver_match.url_name %}
+                <li class="nk-menu-item{% if atual == 'evento-lista' %} active current-page{% endif %}">
+                    <a href="{% url 'evento-lista' %}" class="nk-menu-link"{% if atual == 'evento-lista' %} aria-current="page"{% endif %}>
+                        <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-calendar"></em></span>
+                        <span class="nk-menu-text">Eventos</span>
+                    </a>
+                </li>
+                {% endwith %}
+
+                Ocultar um item não é autorização: a view correspondente valida permissão.
+            {% endcomment %}
+        </ul>
+    </div>
+</nav>

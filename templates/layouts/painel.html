@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% comment %}
+    Layout padrão do painel (estrutura de templates/exemplos/_blank.html).
+    Uso numa página:
+        {% extends "layouts/painel.html" %}
+        {% block title %}Eventos | GoHub{% endblock %}
+        {% block description %}Lista de eventos cadastrados.{% endblock %}
+        {% block content %}<h1 class="nk-block-title page-title">Eventos</h1>...{% endblock %}
+    A página fornece o único <h1>. Blocos dentro de {% include %} não podem ser
+    sobrescritos: para trocar uma região inteira, sobrescreva o bloco que envolve o include.
+{% endcomment %}
+
+{% block body_class %}nk-body npc-default has-apps-sidebar has-sidebar{% endblock %}
+
+{% block body %}
+    <div class="nk-app-root">
+        {% block barra_apps %}{% include "partials/painel/_barra_apps.html" %}{% endblock %}
+        <div class="nk-main">
+            <div class="nk-wrap">
+                {% block cabecalho %}{% include "partials/painel/_cabecalho.html" %}{% endblock %}
+                {% block menu_lateral %}{% include "partials/painel/_menu_lateral.html" %}{% endblock %}
+                <main id="conteudo" class="nk-content" tabindex="-1">
+                    <div class="container-fluid">
+                        <div class="nk-content-inner">
+                            <div class="nk-content-body">
+                                {% include "partials/_mensagens.html" %}
+                                {% block content %}{% endblock %}
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                {% block rodape %}{% include "partials/painel/_rodape.html" %}{% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
