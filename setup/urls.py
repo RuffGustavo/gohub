@@ -6,6 +6,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from app.users.views import UsuarioViewSet
 from app.leads.views import LeadCapturaAPIView, LeadViewSet
+from app.dashboard.views import DashboardViewSet
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -22,6 +23,7 @@ schema_view = get_schema_view(
 router = routers.DefaultRouter()
 router.register('usuarios', UsuarioViewSet, basename='usuario')
 router.register('leads', LeadViewSet, basename='lead')
+router.register('dashboard', DashboardViewSet, basename='dashboard')
 
 def health_check(request):
    return JsonResponse({
@@ -33,6 +35,7 @@ urlpatterns = [
    path('admin/', admin.site.urls),
    path('', include('app.users.urls')),
    path('', include('app.leads.urls')),
+   path('', include('app.dashboard.urls')),
    path('health/', health_check, name='health'),
    # Antes do router: a captação pública não passa pelo LeadViewSet.
    path('api/leads/captura/', LeadCapturaAPIView.as_view(), name='lead-captura'),

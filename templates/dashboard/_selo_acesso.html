@@ -1,0 +1,2 @@
+{# Status do acesso com texto (a cor é só reforço). Parâmetro: acesso (RegistroAcesso). #}
+{% if acesso.status == "sucesso" %}<span class="badge badge-dim bg-success">{{ acesso.get_status_display }}</span>{% else %}<span class="badge badge-dim bg-danger">{{ acesso.get_status_display }}</span>{% endif %}

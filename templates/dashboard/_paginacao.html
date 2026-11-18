@@ -1,0 +1,23 @@
+{% comment %}
+    Paginação de uma tabela (Page do Django). Parâmetros: pagina (Page), parametro (nome do
+    parâmetro GET da página), querystring (demais filtros, sem o parâmetro), rotulo (aria-label).
+{% endcomment %}
+{% if pagina.has_other_pages %}
+    <div class="card-inner">
+        <nav aria-label="{{ rotulo }}">
+            <ul class="pagination justify-content-center justify-content-md-start mb-0">
+                {% if pagina.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}{{ parametro }}={{ pagina.previous_page_number }}">Anterior</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                {% endif %}
+                <li class="page-item active" aria-current="page"><span class="page-link">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span></li>
+                {% if pagina.has_next %}
+                    <li class="page-item"><a class="page-link" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}{{ parametro }}={{ pagina.next_page_number }}">Próxima</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+{% endif %}

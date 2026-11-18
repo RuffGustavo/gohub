@@ -1,0 +1,23 @@
+{% comment %}
+    Card de indicador. O valor é preenchido pelo JS (textContent) a partir da API; sem JS ou
+    antes da resposta mostra "—". Parâmetros:
+        titulo     texto do card
+        chave      caminho do valor na resposta da API (ex.: indicadores.acessos_total)
+        periodo    texto do período a que o número se refere (sempre exibido)
+        variacao   (opcional) caminho da variação em relação ao período anterior
+        unidade    (opcional) "%" para percentuais; tipo_variacao "pontos" para p.p.
+        icone      classe ni-* do ícone decorativo
+{% endcomment %}
+<div class="card card-bordered h-100">
+    <div class="card-inner">
+        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+            <h3 class="title h6 mb-0">{{ titulo }}</h3>
+            {% if icone %}<em class="icon ni {{ icone }} text-soft fs-4" aria-hidden="true"></em>{% endif %}
+        </div>
+        <p class="gohub-kpi__valor mb-0"><span data-gohub-valor="{{ chave }}"{% if unidade %} data-gohub-unidade="{{ unidade }}"{% endif %}>—</span></p>
+        {% if variacao %}
+            <p class="gohub-kpi__variacao mb-1" data-gohub-variacao="{{ variacao }}"{% if tipo_variacao %} data-gohub-variacao-tipo="{{ tipo_variacao }}"{% endif %}><span class="text-soft">Comparação indisponível</span></p>
+        {% endif %}
+        <p class="gohub-kpi__periodo text-soft mb-0">{{ periodo }}</p>
+    </div>
+</div>

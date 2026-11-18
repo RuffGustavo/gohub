@@ -1,0 +1,303 @@
+{% extends "layouts/painel.html" %}
+{% load static %}
+{% comment %}
+    Dashboard gerencial (app.dashboard.views.PainelGerencialView). Cada seção só existe para quem
+    tem a permissão de leitura dela (secoes): leads.view_lead, users.view_usuario,
+    users.view_registroacesso. A API /api/dashboard/gerencial/ aplica a mesma regra.
+    Indicadores e gráficos: assets/js/gohub/paginas/gerencial.js. Tabelas renderizadas aqui.
+{% endcomment %}
+
+{% block title %}Painel gerencial | GoHub{% endblock %}
+{% block description %}Indicadores consolidados de leads, conversão, usuários e acessos ao GoHub.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between flex-wrap g-3">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">Painel gerencial</h1>
+                <div class="nk-block-des text-soft">
+                    <p>Indicadores calculados com os dados atuais do banco. Nenhum valor é estimado ou simulado.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="nk-block" aria-labelledby="titulo-filtros">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h2 class="title h6 mb-3" id="titulo-filtros">Período</h2>
+                {% if filtro.errors %}
+                    <div class="alert alert-warning" role="alert">
+                        O período informado é inválido; exibindo os últimos 30 dias.
+                        {% for erro in filtro.non_field_errors %}{{ erro }}{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="get" action="{% url 'dashboard:gerencial' %}" novalidate data-gohub-filtro-periodo>
+                    {% for nome, valor in ocultos_periodo %}<input type="hidden" name="{{ nome }}" value="{{ valor }}">{% endfor %}
+                    <div class="row g-3 align-end">
+                        {% include "dashboard/_filtro_periodo.html" %}
+                    </div>
+                    <ul class="align-center flex-wrap gx-3 gy-2 mt-3">
+                        <li><button type="submit" class="btn btn-primary">Aplicar</button></li>
+                        <li><a href="{% url 'dashboard:gerencial' %}" class="link link-light">Limpar todos os filtros</a></li>
+                    </ul>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <div class="gohub-dashboard" data-gohub-dashboard="{{ url_api }}">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <p class="mb-0">Período analisado: <strong>{{ periodo.rotulo }}</strong> <span class="text-soft">(comparado com {{ periodo.anterior.rotulo }})</span></p>
+            <div class="d-flex align-items-center gap-2">
+                <p class="text-soft small mb-0" role="status" data-gohub-estado>Carregando indicadores…</p>
+                <button type="button" class="btn btn-sm btn-outline-light" data-gohub-atualizar><em class="icon ni ni-reload" aria-hidden="true"></em><span>Atualizar</span></button>
+            </div>
+        </div>
+
+        {% if "leads" in secoes %}
+            <section class="nk-block" aria-labelledby="titulo-leads">
+                <div class="nk-block-head nk-block-head-sm">
+                    <h2 class="nk-block-title title h5" id="titulo-leads">Leads e conversão</h2>
+                    <p class="text-soft small mb-0">Leads ativos (excluídos e anonimizados ficam de fora). Os números "no período" consideram os leads <strong>recebidos</strong> no período, cada lead contado uma única vez, pelo status atual. <strong>Conversão</strong> = lead que chegou ao status "Enviado ao CRM"; o sistema não tem status de venda nem de perda.</p>
+                </div>
+                <div class="row g-gs">
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Total de leads" chave="leads.indicadores.total" periodo="Todos os leads ativos, desde o início" icone="ni-users" %}</div>
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Recebidos no período" chave="leads.indicadores.recebidos_periodo" variacao="leads.indicadores.variacao_recebidos" periodo=periodo.rotulo icone="ni-user-add" %}</div>
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Enviados ao CRM (convertidos)" chave="leads.indicadores.convertidos_periodo" periodo=periodo.rotulo icone="ni-check-circle" %}</div>
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Taxa de conversão" chave="leads.indicadores.taxa_conversao" unidade="%" variacao="leads.indicadores.variacao_taxa_pontos" tipo_variacao="pontos" periodo=periodo.rotulo icone="ni-growth" %}</div>
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Novos (status Recebido)" chave="leads.indicadores.status_recebido" periodo=periodo.rotulo %}</div>
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Em nutrição" chave="leads.indicadores.status_em_nutricao" periodo=periodo.rotulo %}</div>
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Enviados ao CRM (status atual)" chave="leads.indicadores.status_enviado_crm" periodo=periodo.rotulo %}</div>
+                    <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Descartados" chave="leads.indicadores.descartados_periodo" periodo="Duplicado, inválido ou erro · "|add:periodo.rotulo %}</div>
+                </div>
+
+                <div class="row g-gs mt-0">
+                    <section class="col-xxl-8 col-lg-7" aria-labelledby="titulo-evolucao-leads">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-evolucao-leads">Evolução de leads</h3>
+                                <p class="text-soft small">Leads recebidos em {{ periodo.rotulo }}, {% if periodo.granularidade == "dia" %}por dia{% elif periodo.granularidade == "semana" %}por semana{% else %}por mês{% endif %}. Use "Agrupar" no filtro para trocar.</p>
+                                {% include "dashboard/_grafico.html" with chave="leads.graficos.evolucao" tipo="linha" rotulo="Gráfico de linha com a quantidade de leads recebidos em cada intervalo do período" vazio="Nenhum lead recebido neste período." grande=True %}
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-xxl-4 col-lg-5" aria-labelledby="titulo-conversao">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-conversao">Taxa de conversão</h3>
+                                <p class="text-soft small">Recebidos em {{ periodo.rotulo }} que chegaram ao CRM.</p>
+                                {% include "dashboard/_grafico.html" with chave="leads.graficos.conversao" tipo="rosca" rotulo="Gráfico de rosca com a proporção de leads enviados ao CRM entre os recebidos no período; valores na legenda" vazio="Nenhum lead recebido neste período." legenda=True %}
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-lg-6" aria-labelledby="titulo-funil">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-funil">Funil de conversão</h3>
+                                <p class="text-soft small">Dos leads recebidos em {{ periodo.rotulo }}, quantos alcançaram cada etapa ao menos uma vez (pelo histórico de status). Um lead pode ir direto ao CRM sem passar por nutrição.</p>
+                                {% include "dashboard/_grafico.html" with chave="leads.graficos.funil" tipo="barras-horizontais" rotulo="Gráfico de barras horizontais com os leads recebidos, os que passaram por nutrição e os enviados ao CRM" vazio="Nenhum lead recebido neste período." %}
+                                <p class="small mb-0 mt-2">Descartados (duplicado, inválido ou erro): <strong data-gohub-valor="leads.graficos.funil.descartados">—</strong></p>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-lg-6" aria-labelledby="titulo-desempenho">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-desempenho">Desempenho mensal</h3>
+                                <p class="text-soft small">Últimos 12 meses (não segue o filtro), pelo mês de recebimento: recebidos, enviados ao CRM e taxa de conversão de cada mês.</p>
+                                {% include "dashboard/_grafico.html" with chave="leads.graficos.desempenho_mensal" tipo="desempenho" rotulo="Gráfico de barras com leads recebidos e enviados ao CRM por mês, com linha da taxa de conversão" vazio="Nenhum lead recebido nos últimos 12 meses." grande=True %}
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-lg-6" aria-labelledby="titulo-status">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-status">Leads por status atual</h3>
+                                <p class="text-soft small">Recebidos em {{ periodo.rotulo }}.</p>
+                                {% include "dashboard/_grafico.html" with chave="leads.graficos.status" tipo="barras" rotulo="Gráfico de barras com a quantidade de leads em cada status atual" vazio="Nenhum lead recebido neste período." %}
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-lg-6" aria-labelledby="titulo-classificacao">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-classificacao">Leads por classificação</h3>
+                                <p class="text-soft small">Recebidos em {{ periodo.rotulo }}, pela classificação atual.</p>
+                                {% include "dashboard/_grafico.html" with chave="leads.graficos.classificacao" tipo="rosca" rotulo="Gráfico de rosca com a distribuição dos leads por classificação; valores na legenda" vazio="Nenhum lead recebido neste período." legenda=True %}
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-lg-6" aria-labelledby="titulo-origem">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-origem">Origem dos leads</h3>
+                                <p class="text-soft mb-0"><em class="icon ni ni-info" aria-hidden="true"></em> {{ indisponivel_origem }}</p>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="col-lg-6" aria-labelledby="titulo-responsavel">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <h3 class="title h6" id="titulo-responsavel">Distribuição por responsável</h3>
+                                <p class="text-soft mb-0"><em class="icon ni ni-info" aria-hidden="true"></em> {{ indisponivel_responsavel }}</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if "usuarios" in secoes or "acessos" in secoes %}
+            <section class="nk-block" aria-labelledby="titulo-plataforma">
+                <div class="nk-block-head nk-block-head-sm">
+                    <h2 class="nk-block-title title h5" id="titulo-plataforma">Usuários e acessos</h2>
+                    {% if "acessos" in secoes %}<p class="text-soft small mb-0">Acesso = login bem-sucedido. A contagem começa na implantação do registro de acessos; logins anteriores não existem no banco.</p>{% endif %}
+                </div>
+                <div class="row g-gs">
+                    {% if "usuarios" in secoes %}
+                        <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Usuários cadastrados" chave="usuarios.indicadores.total" periodo="Contas não excluídas, situação atual" icone="ni-users-fill" %}</div>
+                        <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Usuários ativos" chave="usuarios.indicadores.ativos" periodo="Contas liberadas para entrar, situação atual" icone="ni-user-check" %}</div>
+                    {% endif %}
+                    {% if "acessos" in secoes %}
+                        <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Total de acessos" chave="acessos.indicadores.acessos_total" periodo="Desde o início do registro de acessos" icone="ni-signin" %}</div>
+                        <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Acessos no período" chave="acessos.indicadores.acessos_periodo" variacao="acessos.indicadores.variacao_acessos" periodo=periodo.rotulo icone="ni-calendar" %}</div>
+                        <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Usuários com acesso" chave="acessos.indicadores.usuarios_com_acesso_periodo" periodo=periodo.rotulo %}</div>
+                        <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Tentativas com falha" chave="acessos.indicadores.falhas_periodo" periodo=periodo.rotulo icone="ni-shield-alert" %}</div>
+                    {% endif %}
+                </div>
+                {% if "acessos" in secoes %}
+                    <div class="row g-gs mt-0">
+                        <section class="col-xxl-8 col-lg-7" aria-labelledby="titulo-atividade">
+                            <div class="card card-bordered h-100">
+                                <div class="card-inner">
+                                    <h3 class="title h6" id="titulo-atividade">Atividade dos usuários</h3>
+                                    <p class="text-soft small">Acessos e usuários distintos em {{ periodo.rotulo }}, {% if periodo.granularidade == "dia" %}por dia{% elif periodo.granularidade == "semana" %}por semana{% else %}por mês{% endif %}.</p>
+                                    {% include "dashboard/_grafico.html" with chave="acessos.graficos.atividade" tipo="linha" rotulo="Gráfico de linhas com a quantidade de acessos e de usuários distintos em cada intervalo do período" vazio="Nenhum acesso registrado neste período." grande=True %}
+                                </div>
+                            </div>
+                        </section>
+                        <section class="col-xxl-4 col-lg-5" aria-labelledby="titulo-canais">
+                            <div class="card card-bordered h-100">
+                                <div class="card-inner">
+                                    <h3 class="title h6" id="titulo-canais">Acessos por canal e dispositivo</h3>
+                                    <p class="text-soft small">{{ periodo.rotulo }}</p>
+                                    {% include "dashboard/_grafico.html" with chave="acessos.graficos.canais" tipo="rosca" rotulo="Gráfico de rosca com os acessos por canal; valores na legenda" vazio="Nenhum acesso no período." legenda=True %}
+                                    {% include "dashboard/_grafico.html" with chave="acessos.graficos.dispositivos" tipo="rosca" rotulo="Gráfico de rosca com os acessos por tipo de dispositivo; valores na legenda" vazio="Nenhum acesso no período." legenda=True %}
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+
+    {% if "leads" in secoes %}
+        <section class="nk-block" aria-labelledby="titulo-tabela-leads">
+            <div class="card card-bordered">
+                <div class="card-inner">
+                    <h2 class="title h6 mb-1" id="titulo-tabela-leads">Leads recebidos no período</h2>
+                    <p class="text-soft small">{{ periodo.rotulo }}. Origem e responsável não são registrados pelo sistema.</p>
+                    {% if filtro_leads_erros %}<div class="alert alert-warning" role="alert">Alguns filtros da tabela são inválidos e foram ignorados.</div>{% endif %}
+                    <form method="get" action="{% url 'dashboard:gerencial' %}#titulo-tabela-leads" novalidate>
+                        {% for nome, valor in ocultos_leads %}<input type="hidden" name="{{ nome }}" value="{{ valor }}">{% endfor %}
+                        <div class="row g-3 align-end">
+                            <div class="col-sm-6 col-lg-3">{% include "leads/painel/_campo.html" with campo=filtro_leads.status tipo="select" %}</div>
+                            <div class="col-sm-6 col-lg-3">{% include "leads/painel/_campo.html" with campo=filtro_leads.classificacao tipo="select" %}</div>
+                            <div class="col-lg-4">{% include "leads/painel/_campo.html" with campo=filtro_leads.q maxlength=100 %}</div>
+                            <div class="col-lg-2"><button type="submit" class="btn btn-primary">Filtrar leads</button></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <caption class="px-3">{{ leads.paginator.count }} lead(s) encontrado(s)</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Nome</th>
+                                <th scope="col">E-mail</th>
+                                <th scope="col">Telefone</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Classificação</th>
+                                <th scope="col">Cadastrado em</th>
+                                <th scope="col">Atualizado em</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lead in leads %}
+                                <tr>
+                                    <th scope="row" class="fw-normal"><a href="{% url 'leads:painel-detalhe' lead.pk %}">{{ lead.nome }}</a></th>
+                                    <td>{{ lead.email }}</td>
+                                    <td class="text-nowrap">{{ lead.telefone }}</td>
+                                    <td>{% include "leads/painel/_selo.html" with tipo="status" valor=lead.status_atual rotulo=lead.get_status_atual_display %}</td>
+                                    <td>{% include "leads/painel/_selo.html" with tipo="classificacao" valor=lead.classificacao_atual rotulo=lead.get_classificacao_atual_display %}</td>
+                                    <td class="text-nowrap"><time datetime="{{ lead.created_at|date:'c' }}">{{ lead.created_at|date:"d/m/Y H:i" }}</time></td>
+                                    <td class="text-nowrap"><time datetime="{{ lead.updated_at|date:'c' }}">{{ lead.updated_at|date:"d/m/Y H:i" }}</time></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="7" class="text-center text-soft py-4">Nenhum lead encontrado com esses filtros.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include "dashboard/_paginacao.html" with pagina=leads parametro="pagina_leads" querystring=querystring_leads rotulo="Paginação da tabela de leads" %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if "acessos" in secoes %}
+        <section class="nk-block" aria-labelledby="titulo-tabela-acessos">
+            <div class="card card-bordered">
+                <div class="card-inner">
+                    <h2 class="title h6 mb-1" id="titulo-tabela-acessos">Histórico geral de acessos</h2>
+                    <p class="text-soft small">{{ periodo.rotulo }}. O IP é dado pessoal: use estas informações só para segurança e suporte.</p>
+                    {% if filtro_acessos.errors %}<div class="alert alert-warning" role="alert">Alguns filtros da tabela são inválidos e foram ignorados.</div>{% endif %}
+                    <form method="get" action="{% url 'dashboard:gerencial' %}#titulo-tabela-acessos" novalidate>
+                        {% for nome, valor in ocultos_acessos %}<input type="hidden" name="{{ nome }}" value="{{ valor }}">{% endfor %}
+                        <div class="row g-3 align-end">
+                            <div class="col-sm-6 col-lg-3">{% include "leads/painel/_campo.html" with campo=filtro_acessos.status tipo="select" %}</div>
+                            <div class="col-sm-6 col-lg-3">{% include "leads/painel/_campo.html" with campo=filtro_acessos.canal tipo="select" %}</div>
+                            <div class="col-lg-4">{% include "leads/painel/_campo.html" with campo=filtro_acessos.usuario maxlength=50 %}</div>
+                            <div class="col-lg-2"><button type="submit" class="btn btn-primary">Filtrar acessos</button></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <caption class="px-3">{{ acessos.paginator.count }} registro(s) encontrado(s)</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Usuário</th>
+                                <th scope="col">Endereço IP</th>
+                                <th scope="col">Data</th>
+                                <th scope="col">Horário</th>
+                                <th scope="col">Navegador / dispositivo</th>
+                                <th scope="col">Canal</th>
+                                <th scope="col">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acesso in acessos %}
+                                <tr>
+                                    <th scope="row" class="fw-normal">{{ acesso.usuario.nome }} <span class="text-soft">({{ acesso.usuario.username }})</span></th>
+                                    <td class="text-nowrap">{{ acesso.ip|default:"—" }}</td>
+                                    <td class="text-nowrap"><time datetime="{{ acesso.ocorrido_em|date:'c' }}">{{ acesso.ocorrido_em|date:"d/m/Y" }}</time></td>
+                                    <td class="text-nowrap">{{ acesso.ocorrido_em|date:"H:i:s" }}</td>
+                                    <td>{{ acesso.navegador|default:"Não identificado" }} · {{ acesso.sistema_operacional|default:"—" }} · {{ acesso.get_dispositivo_display }}</td>
+                                    <td>{{ acesso.get_canal_display }}</td>
+                                    <td>{% include "dashboard/_selo_acesso.html" with acesso=acesso %}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="7" class="text-center text-soft py-4">Nenhum acesso encontrado com esses filtros.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include "dashboard/_paginacao.html" with pagina=acessos parametro="pagina_acessos" querystring=querystring_acessos rotulo="Paginação do histórico geral de acessos" %}
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}
+
+{% block js_extra %}<script type="module" src="{% static 'assets/js/gohub/paginas/gerencial.js' %}"></script>{% endblock %}

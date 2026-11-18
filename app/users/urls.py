@@ -1,6 +1,8 @@
 from django.urls import path
 from django.views.generic import RedirectView
 
+from app.dashboard.views import PainelPessoalView
+
 from . import views
 
 app_name = "users"
@@ -10,7 +12,7 @@ urlpatterns = [
     path("", views.LoginView.as_view(), name="login"),
     path("login/", RedirectView.as_view(pattern_name="users:login", query_string=True), name="login-atalho"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
-    path("painel/", views.PainelView.as_view(), name="painel"),
+    path("painel/", PainelPessoalView.as_view(), name="painel"),
     path("perfil/", views.PerfilView.as_view(), name="perfil"),
     path("perfil/editar/", views.PerfilEditarView.as_view(), name="perfil-editar"),
     path("perfil/seguranca/", views.AlterarSenhaView.as_view(), name="perfil-seguranca"),

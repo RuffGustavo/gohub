@@ -1,192 +1,206 @@
 {% extends "layouts/painel.html" %}
 {% load static %}
 {% comment %}
-    Dashboard do cliente (estrutura de templates/exemplos/index.html). Exige login (PainelView).
-    Indicadores, gráficos e atividades usam DADOS FICTÍCIOS (views.DADOS_EXEMPLO), identificados
-    na tela; o card "Sua conta" mostra dados reais do usuário autenticado.
-    Gráficos: Chart.js do bundle do tema, desenhados por assets/js/gohub/paginas/painel.js a partir
-    do json_script "dados-exemplo-painel".
+    Dashboard pessoal (app.dashboard.views.PainelPessoalView): só dados da conta autenticada.
+    Indicadores e gráficos vêm da API /api/dashboard/pessoal/ (mesmos filtros da página),
+    desenhados por assets/js/gohub/paginas/painel.js. Cartão da conta e histórico são
+    renderizados aqui, com autoescape.
 {% endcomment %}
 
 {% block title %}Painel | GoHub{% endblock %}
-{% block description %}Visão geral da sua conta no GoHub.{% endblock %}
+{% block description %}Seus acessos ao GoHub: histórico, IPs, dispositivos e estatísticas da sua conta.{% endblock %}
 
 {% block content %}
     <div class="nk-block-head nk-block-head-sm">
-        <div class="nk-block-between">
+        <div class="nk-block-between flex-wrap g-3">
             <div class="nk-block-head-content">
                 <h1 class="nk-block-title page-title">Olá, {{ user.get_short_name }}</h1>
                 <div class="nk-block-des text-soft">
-                    <p>Bem-vindo ao GoHub. Aqui você acompanha a visão geral da sua conta.</p>
+                    <p>Acompanhe os acessos à sua conta. Só você vê estas informações.</p>
                 </div>
             </div>
             <div class="nk-block-head-content">
-                <a href="{% url 'users:perfil' %}" class="btn btn-white btn-dim btn-outline-light">
-                    <em class="icon ni ni-user-alt" aria-hidden="true"></em><span>Meu perfil</span>
-                </a>
+                <ul class="d-flex flex-wrap gap-2 list-unstyled mb-0">
+                    {% if pode_ver_gerencial %}
+                        <li><a href="{% url 'dashboard:gerencial' %}" class="btn btn-primary"><em class="icon ni ni-growth" aria-hidden="true"></em><span>Painel gerencial</span></a></li>
+                    {% endif %}
+                    <li><a href="{% url 'users:perfil' %}" class="btn btn-white btn-dim btn-outline-light"><em class="icon ni ni-user-alt" aria-hidden="true"></em><span>Meu perfil</span></a></li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <div class="nk-block">
-        <div class="alert alert-pro alert-info" role="note">
-            <div class="alert-text">
-                <h2 class="h6">Dados de exemplo</h2>
-                <p>Os indicadores, gráficos e atividades desta página são fictícios e servem apenas para demonstrar o layout. Eles serão substituídos pelos dados reais conforme os módulos do sistema forem implementados.</p>
+    <section class="nk-block" aria-labelledby="titulo-filtros">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h2 class="title h6 mb-3" id="titulo-filtros">Período</h2>
+                {% if filtro.errors or filtro_historico.errors %}
+                    <div class="alert alert-warning" role="alert">
+                        Alguns filtros são inválidos e foram ignorados; exibindo os últimos 30 dias.
+                        {% for erro in filtro.non_field_errors %}{{ erro }}{% endfor %}
+                    </div>
+                {% endif %}
+                <form method="get" action="{% url 'users:painel' %}" novalidate data-gohub-filtro-periodo>
+                    <div class="row g-3 align-end">
+                        {% include "dashboard/_filtro_periodo.html" %}
+                        <div class="col-sm-6 col-lg-3">{% include "leads/painel/_campo.html" with campo=filtro_historico.status tipo="select" %}</div>
+                    </div>
+                    <ul class="align-center flex-wrap gx-3 gy-2 mt-3">
+                        <li><button type="submit" class="btn btn-primary">Aplicar</button></li>
+                        <li><a href="{% url 'users:painel' %}" class="link link-light">Limpar filtros</a></li>
+                    </ul>
+                </form>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="nk-block">
-        <div class="row g-gs">
-            {% for item in indicadores_exemplo %}
-                <div class="col-sm-6 col-lg-4">
+    <div class="gohub-dashboard" data-gohub-dashboard="{{ url_api }}">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <p class="mb-0">Período analisado: <strong>{{ periodo.rotulo }}</strong> <span class="text-soft">(comparado com {{ periodo.anterior.rotulo }})</span></p>
+            <div class="d-flex align-items-center gap-2">
+                <p class="text-soft small mb-0" role="status" data-gohub-estado>Carregando indicadores…</p>
+                <button type="button" class="btn btn-sm btn-outline-light" data-gohub-atualizar><em class="icon ni ni-reload" aria-hidden="true"></em><span>Atualizar</span></button>
+            </div>
+        </div>
+
+        <section class="nk-block" aria-labelledby="titulo-indicadores">
+            <h2 class="visually-hidden" id="titulo-indicadores">Indicadores</h2>
+            <div class="row g-gs">
+                <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Total de acessos" chave="indicadores.acessos_total" periodo="Desde o início do registro de acessos" icone="ni-signin" %}</div>
+                <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Acessos no período" chave="indicadores.acessos_periodo" variacao="indicadores.variacao_acessos" periodo=periodo.rotulo icone="ni-calendar" %}</div>
+                <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="Tentativas com falha" chave="indicadores.falhas_periodo" periodo=periodo.rotulo icone="ni-shield-alert" %}</div>
+                <div class="col-sm-6 col-xl-3">{% include "dashboard/_kpi.html" with titulo="IPs diferentes" chave="indicadores.ips_distintos_periodo" periodo=periodo.rotulo icone="ni-globe" %}</div>
+                <div class="col-sm-4">{% include "dashboard/_kpi.html" with titulo="Acessos hoje" chave="indicadores.acessos_hoje" periodo="Desde 00:00 de hoje" %}</div>
+                <div class="col-sm-4">{% include "dashboard/_kpi.html" with titulo="Acessos nesta semana" chave="indicadores.acessos_semana" periodo="Desde segunda-feira" %}</div>
+                <div class="col-sm-4">{% include "dashboard/_kpi.html" with titulo="Acessos neste mês" chave="indicadores.acessos_mes" periodo="Desde o dia 1º" %}</div>
+            </div>
+        </section>
+
+        <div class="nk-block">
+            <div class="row g-gs">
+                <section class="col-xxl-8 col-lg-7" aria-labelledby="titulo-evolucao">
                     <div class="card card-bordered h-100">
                         <div class="card-inner">
-                            <div class="card-title-group align-start mb-2">
-                                <div class="card-title">
-                                    <h2 class="title h6">{{ item.titulo }}</h2>
+                            <h2 class="title h6" id="titulo-evolucao">Acessos ao longo do tempo</h2>
+                            <p class="text-soft small">{{ periodo.rotulo }}, agrupado {% if periodo.granularidade == "dia" %}por dia{% elif periodo.granularidade == "semana" %}por semana{% else %}por mês{% endif %}.</p>
+                            {% include "dashboard/_grafico.html" with chave="graficos.evolucao" tipo="linha" rotulo="Gráfico de linha com a quantidade de acessos em cada intervalo do período" vazio="Nenhum acesso registrado neste período." grande=True %}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="col-xxl-4 col-lg-5" aria-labelledby="titulo-conta">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <h2 class="title h6 mb-3" id="titulo-conta">Sua conta</h2>
+                            <div class="user-card mb-3">
+                                <div class="user-avatar bg-primary" aria-hidden="true"><span>{{ user.get_username|slice:":2"|upper }}</span></div>
+                                <div class="user-info">
+                                    <span class="lead-text">{{ user.get_full_name }}</span>
+                                    <span class="sub-text">{{ user.get_username }}</span>
                                 </div>
-                                <div class="card-tools">
-                                    <span class="badge badge-dim bg-gray">Exemplo</span>
+                            </div>
+                            <dl class="gohub-dados mb-3">
+                                <dt>Último login</dt>
+                                <dd>{% if user.last_login %}<time datetime="{{ user.last_login|date:'c' }}">{{ user.last_login|date:"d/m/Y \à\s H:i" }}</time>{% else %}—{% endif %}</dd>
+                                <dt>IP do login</dt>
+                                <dd>{{ login_atual.ip|default:"Não registrado" }}</dd>
+                                <dt>Navegador</dt>
+                                <dd>{% if login_atual %}{{ login_atual.navegador }} · {{ login_atual.sistema_operacional }} · {{ login_atual.dispositivo }}{% else %}Não registrado{% endif %}</dd>
+                                <dt>Acesso anterior</dt>
+                                <dd>{% if acesso_anterior %}<time datetime="{{ acesso_anterior.ocorrido_em|date:'c' }}">{{ acesso_anterior.ocorrido_em|date:"d/m/Y H:i" }}</time> · IP {{ acesso_anterior.ip|default:"não registrado" }}{% else %}Nenhum registrado{% endif %}</dd>
+                                <dt>Última falha</dt>
+                                <dd>{% if ultima_falha %}<time datetime="{{ ultima_falha.ocorrido_em|date:'c' }}">{{ ultima_falha.ocorrido_em|date:"d/m/Y H:i" }}</time> · IP {{ ultima_falha.ip|default:"não registrado" }}{% else %}Nenhuma registrada{% endif %}</dd>
+                            </dl>
+                            <h3 class="title h6 mb-1">IPs usados recentemente</h3>
+                            <p class="text-soft small mb-2">Logins bem-sucedidos em {{ periodo.rotulo }}, do mais recente.</p>
+                            <ul class="list-unstyled small mb-3" data-gohub-ips data-gohub-ips-vazio="Nenhum IP registrado no período."><li class="text-soft">—</li></ul>
+                            <p class="text-soft small mb-0">Não reconhece um acesso ou uma falha? <a href="{% url 'users:perfil-seguranca' %}">Troque sua senha</a>: as outras sessões abertas são encerradas.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="col-lg-6" aria-labelledby="titulo-por-periodo">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                                <div>
+                                    <h2 class="title h6" id="titulo-por-periodo">Acessos por período</h2>
+                                    <p class="text-soft small" data-gohub-janela-descricao>Últimos 14 dias</p>
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Agrupamento do gráfico de acessos por período">
+                                    <button type="button" class="btn btn-outline-primary active" aria-pressed="true" data-gohub-janela="dia">Dia</button>
+                                    <button type="button" class="btn btn-outline-primary" aria-pressed="false" data-gohub-janela="semana">Semana</button>
+                                    <button type="button" class="btn btn-outline-primary" aria-pressed="false" data-gohub-janela="mes">Mês</button>
                                 </div>
                             </div>
-                            <div class="align-end flex-sm-wrap g-4 flex-md-nowrap">
-                                <div class="nk-sale-data">
-                                    <span class="amount">{{ item.valor }}</span>
-                                    <span class="sub-title">
-                                        <em class="icon ni {% if item.subiu %}ni-arrow-long-up text-success{% else %}ni-arrow-long-down text-danger{% endif %}" aria-hidden="true"></em>
-                                        {% if item.subiu %}Alta{% else %}Queda{% endif %} de {{ item.variacao }} em relação ao período anterior
-                                    </span>
-                                </div>
-                                {% if forloop.first %}
-                                    <div class="nk-sales-ck">
-                                        <canvas data-gohub-grafico="acessos" role="img" aria-label="Gráfico de barras de exemplo com os acessos de cada dia da semana"></canvas>
-                                    </div>
-                                {% endif %}
-                            </div>
+                            {% include "dashboard/_grafico.html" with chave="graficos.por_periodo.dia" tipo="barras" rotulo="Gráfico de barras com a quantidade de acessos por dia, semana ou mês" vazio="Nenhum acesso registrado nesta janela." %}
                         </div>
                     </div>
-                </div>
-            {% endfor %}
+                </section>
 
-            <div class="col-xxl-8 col-lg-7">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start gx-3 mb-3">
-                            <div class="card-title">
-                                <h2 class="title h6">Evolução das tarefas</h2>
-                                <p>Tarefas concluídas e em andamento nos últimos 6 meses.</p>
-                            </div>
-                            <div class="card-tools">
-                                <span class="badge badge-dim bg-gray">Exemplo</span>
-                            </div>
-                        </div>
-                        <div class="nk-sales-ck large pt-4">
-                            <canvas data-gohub-grafico="evolucao" role="img" aria-label="Gráfico de linhas de exemplo com a evolução mensal das tarefas concluídas e em andamento"></canvas>
+                <section class="col-lg-3 col-sm-6" aria-labelledby="titulo-navegadores">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <h2 class="title h6" id="titulo-navegadores">Navegadores</h2>
+                            <p class="text-soft small">{{ periodo.rotulo }}</p>
+                            {% include "dashboard/_grafico.html" with chave="graficos.navegadores" tipo="rosca" rotulo="Gráfico de rosca com a distribuição dos acessos por navegador; valores na legenda" vazio="Sem acessos no período." legenda=True %}
                         </div>
                     </div>
-                </div>
-            </div>
+                </section>
 
-            <div class="col-xxl-4 col-lg-5">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-3">
-                            <div class="card-title">
-                                <h2 class="title h6">Distribuição por situação</h2>
-                            </div>
-                            <div class="card-tools">
-                                <span class="badge badge-dim bg-gray">Exemplo</span>
-                            </div>
-                        </div>
-                        <div class="nk-ck-sm">
-                            <canvas data-gohub-grafico="distribuicao" role="img" aria-label="Gráfico de rosca de exemplo com a distribuição das tarefas por situação"></canvas>
-                        </div>
-                        <ul class="gohub-legenda mt-3">
-                            {% for rotulo, valor in legenda_distribuicao %}
-                                <li><span class="gohub-legenda__cor" data-gohub-legenda="{{ forloop.counter0 }}" aria-hidden="true"></span>{{ rotulo }}: {{ valor }}%</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xxl-8 col-lg-7">
-                <div class="card card-bordered card-full">
-                    <div class="card-inner">
-                        <div class="card-title-group">
-                            <div class="card-title">
-                                <h2 class="title h6">Atividades recentes</h2>
-                            </div>
-                            <div class="card-tools">
-                                <span class="badge badge-dim bg-gray">Exemplo</span>
-                            </div>
+                <section class="col-lg-3 col-sm-6" aria-labelledby="titulo-dispositivos">
+                    <div class="card card-bordered h-100">
+                        <div class="card-inner">
+                            <h2 class="title h6" id="titulo-dispositivos">Dispositivos</h2>
+                            <p class="text-soft small">{{ periodo.rotulo }}</p>
+                            {% include "dashboard/_grafico.html" with chave="graficos.dispositivos" tipo="rosca" rotulo="Gráfico de rosca com a distribuição dos acessos por tipo de dispositivo; valores na legenda" vazio="Sem acessos no período." legenda=True %}
                         </div>
                     </div>
-                    <div class="card-inner p-0 border-top">
-                        <table class="nk-tb-list nk-tb-orders">
-                            <caption class="visually-hidden">Atividades recentes (dados de exemplo)</caption>
-                            <thead>
-                                <tr class="nk-tb-item nk-tb-head">
-                                    <th scope="col" class="nk-tb-col fw-normal"><span>Atividade</span></th>
-                                    <th scope="col" class="nk-tb-col tb-col-sm fw-normal"><span>Quando</span></th>
-                                    <th scope="col" class="nk-tb-col fw-normal"><span>Situação</span></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for atividade in atividades_exemplo %}
-                                    <tr class="nk-tb-item">
-                                        <td class="nk-tb-col"><span class="tb-lead">{{ atividade.descricao }}</span></td>
-                                        <td class="nk-tb-col tb-col-sm"><span class="tb-sub">{{ atividade.quando }}</span></td>
-                                        <td class="nk-tb-col"><span class="badge badge-dot badge-dot-xs bg-{{ atividade.cor }}">{{ atividade.situacao }}</span></td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xxl-4 col-lg-5">
-                <div class="card card-bordered h-100">
-                    <div class="card-inner">
-                        <div class="card-title-group align-start mb-3">
-                            <div class="card-title">
-                                <h2 class="title h6">Sua conta</h2>
-                            </div>
-                        </div>
-                        <div class="user-card mb-3">
-                            <div class="user-avatar bg-primary" aria-hidden="true">
-                                <span>{{ user.get_username|slice:":2"|upper }}</span>
-                            </div>
-                            <div class="user-info">
-                                <span class="lead-text">{{ user.get_full_name }}</span>
-                                <span class="sub-text">{{ user.email }}</span>
-                            </div>
-                        </div>
-                        <dl class="gohub-dados mb-3">
-                            <dt>Nome de usuário</dt>
-                            <dd>{{ user.get_username }}</dd>
-                            <dt>Último acesso</dt>
-                            <dd>{{ user.last_login|date:"d/m/Y H:i"|default:"—" }}</dd>
-                            <dt>Membro desde</dt>
-                            <dd>{{ user.created_at|date:"d/m/Y"|default:"—" }}</dd>
-                        </dl>
-                        <a href="{% url 'users:perfil-editar' %}" class="btn btn-primary btn-dim">
-                            <em class="icon ni ni-edit" aria-hidden="true"></em><span>Editar meus dados</span>
-                        </a>
-                        {% if user.is_staff %}
-                            <a href="{% url 'admin:index' %}" class="btn btn-outline-light ms-1 mt-1 mt-sm-0">
-                                <em class="icon ni ni-setting" aria-hidden="true"></em><span>Área administrativa</span>
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
+                </section>
             </div>
         </div>
     </div>
-    {{ dados_exemplo|json_script:"dados-exemplo-painel" }}
+
+    <section class="nk-block" aria-labelledby="titulo-historico">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h2 class="title h6 mb-1" id="titulo-historico">Histórico de acessos</h2>
+                <p class="text-soft small mb-0">{{ periodo.rotulo }}. Inclui tentativas com senha errada na sua conta. O navegador e o dispositivo são informados pelo próprio aparelho e podem não ser exatos.</p>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <caption class="px-3">{{ historico.paginator.count }} registro(s) no período</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Usuário</th>
+                            <th scope="col">Endereço IP</th>
+                            <th scope="col">Data</th>
+                            <th scope="col">Horário</th>
+                            <th scope="col">Navegador / dispositivo</th>
+                            <th scope="col">Canal</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for acesso in historico %}
+                            <tr>
+                                <td>{{ user.get_full_name }}</td>
+                                <td class="text-nowrap">{{ acesso.ip|default:"—" }}</td>
+                                <td class="text-nowrap"><time datetime="{{ acesso.ocorrido_em|date:'c' }}">{{ acesso.ocorrido_em|date:"d/m/Y" }}</time></td>
+                                <td class="text-nowrap">{{ acesso.ocorrido_em|date:"H:i:s" }}</td>
+                                <td>{{ acesso.navegador|default:"Não identificado" }} · {{ acesso.sistema_operacional|default:"—" }} · {{ acesso.get_dispositivo_display }}</td>
+                                <td>{{ acesso.get_canal_display }}</td>
+                                <td>{% include "dashboard/_selo_acesso.html" with acesso=acesso %}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="7" class="text-center text-soft py-4">Nenhum acesso registrado neste período.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% include "dashboard/_paginacao.html" with pagina=historico parametro="pagina" querystring=querystring rotulo="Paginação do histórico de acessos" %}
+        </div>
+    </section>
 {% endblock %}
 
 {% block js_extra %}<script type="module" src="{% static 'assets/js/gohub/paginas/painel.js' %}"></script>{% endblock %}

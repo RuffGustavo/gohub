@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "app.users",
     "app.leads",
+    "app.dashboard",
 ]
 
 MIDDLEWARE = [
@@ -89,6 +90,14 @@ DATABASES = {
 
 # Usuário interno da tabela "usuario" (MER). Definido antes do primeiro migrate.
 AUTH_USER_MODEL = "users.Usuario"
+
+# Único backend: o ModelBackend do Django + limite de falhas de login (app/users/limite_login.py).
+AUTHENTICATION_BACKENDS = ["app.users.backends.ModelBackendComLimite"]
+LOGIN_MAX_FALHAS_IP = int(os.getenv("LOGIN_MAX_FALHAS_IP", "20"))
+LOGIN_MAX_FALHAS_CONTA = int(os.getenv("LOGIN_MAX_FALHAS_CONTA", "5"))
+LOGIN_JANELA_SEGUNDOS = int(os.getenv("LOGIN_JANELA_SEGUNDOS", "900"))
+if min(LOGIN_MAX_FALHAS_IP, LOGIN_MAX_FALHAS_CONTA, LOGIN_JANELA_SEGUNDOS) < 1:
+    raise ImproperlyConfigured("LOGIN_MAX_FALHAS_IP, LOGIN_MAX_FALHAS_CONTA e LOGIN_JANELA_SEGUNDOS devem ser positivos.")
 
 # Área de acesso dos usuários (app.users). O Django Admin (/admin/) tem login próprio e só
 # aceita quem tem is_staff (superusuário ou permissão "users.acessar_admin").

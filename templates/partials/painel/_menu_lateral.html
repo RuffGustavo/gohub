@@ -26,6 +26,15 @@
                     <span class="nk-menu-text">Painel</span>
                 </a>
             </li>
+            {% if perms.leads.view_lead or perms.users.view_usuario or perms.users.view_registroacesso %}
+                {# Mesmas permissões de app.dashboard.permissions; a view revalida. #}
+                <li class="nk-menu-item{% if atual == 'dashboard:gerencial' %} active current-page{% endif %}">
+                    <a href="{% url 'dashboard:gerencial' %}" class="nk-menu-link"{% if atual == 'dashboard:gerencial' %} aria-current="page"{% endif %}>
+                        <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-growth"></em></span>
+                        <span class="nk-menu-text">Painel gerencial</span>
+                    </a>
+                </li>
+            {% endif %}
             {% if perms.leads.view_lead %}
                 <li class="nk-menu-heading">
                     <span class="overline-title text-primary-alt">Comercial</span>

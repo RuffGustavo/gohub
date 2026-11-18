@@ -1,8 +1,10 @@
 import uuid
 
+from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.postgres.functions import RandomUUID
+from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator, RegexValidator
 from django.db import models, transaction
 from django.db.models import Exists, OuterRef
@@ -266,3 +268,93 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         self.is_active = False
         self.deleted_at = timezone.now()
         self.save(update_fields=["is_active", "deleted_at"])
+
+
+# --------------------------------------------------------------------------- acessos
+class StatusAcesso(models.TextChoices):
+    SUCESSO = "sucesso", "Sucesso"
+    FALHA = "falha", "Falha"
+
+
+class CanalAcesso(models.TextChoices):
+    PAINEL = "painel", "Painel"
+    ADMIN = "admin", "Área administrativa"
+    API = "api", "API"
+
+
+class DispositivoAcesso(models.TextChoices):
+    COMPUTADOR = "computador", "Computador"
+    CELULAR = "celular", "Celular"
+    TABLET = "tablet", "Tablet"
+    OUTRO = "outro", "Outro / não identificado"
+
+
+class RegistroAcessoQuerySet(models.QuerySet):
+    def sucessos(self):
+        return self.filter(status=StatusAcesso.SUCESSO)
+
+    def update(self, **kwargs):
+        raise ValidationError("Registro de acesso é somente inserção.")
+
+
+class RegistroAcesso(models.Model):
+    """Tentativa de login de um usuário existente (sucesso ou falha), gravada pelos receptores
+    dos sinais de autenticação (app/users/auditoria.py).
+
+    Minimização (LGPD): não guarda o User-Agent completo, só navegador, sistema e tipo de
+    dispositivo resumidos (app/users/agente.py). O IP é dado pessoal; tentativa com usuário
+    inexistente não é gravada (não há titular a quem mostrar).
+    """
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="acessos",
+        db_index=False,  # coberto pelo índice ix_acesso_usuario_data
+        verbose_name="usuário",
+    )
+    status = models.CharField("status", max_length=10, choices=StatusAcesso.choices)
+    canal = models.CharField("canal", max_length=10, choices=CanalAcesso.choices)
+    ip = models.GenericIPAddressField("endereço IP", null=True, blank=True)
+    navegador = models.CharField("navegador", max_length=30, blank=True, default="")
+    sistema_operacional = models.CharField("sistema operacional", max_length=30, blank=True, default="")
+    dispositivo = models.CharField(
+        "dispositivo", max_length=12, choices=DispositivoAcesso.choices, default=DispositivoAcesso.OUTRO
+    )
+    ocorrido_em = models.DateTimeField("ocorrido em", db_default=Now(), editable=False)
+
+    objects = RegistroAcessoQuerySet.as_manager()
+
+    class Meta:
+        db_table = "registro_acesso"
+        db_table_comment = "Histórico imutável de tentativas de login (sucesso e falha) de usuários existentes"
+        ordering = ["-ocorrido_em", "-id"]
+        verbose_name = "registro de acesso"
+        verbose_name_plural = "registros de acesso"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=StatusAcesso.values), name="ck_acesso_status",
+                violation_error_message="Status inválido.",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(canal__in=CanalAcesso.values), name="ck_acesso_canal",
+                violation_error_message="Canal inválido.",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(dispositivo__in=DispositivoAcesso.values), name="ck_acesso_dispositivo",
+                violation_error_message="Dispositivo inválido.",
+            ),
+        ]
+        indexes = [
+            # Dashboard pessoal (sempre filtrado pelo usuário) e visão geral por período.
+            models.Index(fields=["usuario", "-ocorrido_em"], name="ix_acesso_usuario_data"),
+            models.Index(fields=["-ocorrido_em"], name="ix_acesso_data"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_status_display()} em {self.ocorrido_em:%d/%m/%Y %H:%M}" if self.ocorrido_em else "Acesso"
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValidationError("Registro de acesso é imutável: grave um novo registro.")
+        super().save(*args, **kwargs)

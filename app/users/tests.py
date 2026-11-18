@@ -1,3 +1,4 @@
+import base64
 import datetime
 import logging
 import re
@@ -133,9 +134,11 @@ STORAGES_DE_TESTE = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
+# O limite de tentativas de login usa o cache: nos testes, em memória (nunca o Redis real).
+CACHES_DE_TESTE = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "users-testes"}}
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class LoginLogoutTests(TestCase):
     def setUp(self):
         self.usuario = criar_usuario()
@@ -196,7 +199,7 @@ class LoginLogoutTests(TestCase):
         self.assertRedirects(resposta, reverse("users:painel"), fetch_redirect_response=False)
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class AdminUsuarioTests(TestCase):
     def setUp(self):
         self.gestor = criar_usuario(username="gestor")
@@ -256,7 +259,7 @@ class AdminUsuarioTests(TestCase):
         self.assertIsNone(self.gestor.deleted_at)  # a própria conta nunca
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class AcessoAdminTests(TestCase):
     """O Django Admin fica restrito a superusuários e a quem tem "users.acessar_admin"."""
 
@@ -318,7 +321,7 @@ class AcessoAdminTests(TestCase):
         self.assertFalse(get_user_model().objects.get(pk=self.comum.pk).is_staff)
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class EscaladaPorGruposTests(TestCase):
     """R1: só superusuário cria, altera ou exclui grupos (e, com isso, concede permissões)."""
 
@@ -375,7 +378,7 @@ class EscaladaPorGruposTests(TestCase):
         self.assertTrue(self.grupo.permissions.filter(codename="view_usuario").exists())
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class ContasComPrivilegioTests(TestCase):
     """R2: só superusuário gerencia contas com qualquer privilégio (grupo, permissão direta,
     acesso ao admin ou superusuário); um não superusuário nunca define esses campos em ninguém."""
@@ -482,7 +485,7 @@ class ContasComPrivilegioTests(TestCase):
         self.assertEqual(self.chefe.nome, "Chefe Novo")
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class SessoesEAvisoDeEmailTests(TestCase):
     """Troca de senha ou de e-mail encerra todas as sessões da pessoa; troca de e-mail avisa o antigo."""
 
@@ -538,7 +541,7 @@ class SessoesEAvisoDeEmailTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class RotasDoClienteTests(TestCase):
     """A raiz (/) é o login do cliente; /login/ é atalho; o admin continua separado."""
 
@@ -577,21 +580,22 @@ class RotasDoClienteTests(TestCase):
         )
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class PainelTests(TestCase):
     def setUp(self):
         self.url = reverse("users:painel")
         self.usuario = criar_usuario()
 
-    def test_painel_com_dados_de_exemplo_identificados(self):
+    def test_painel_com_dados_reais_da_conta(self):
+        # Os dados fictícios de exemplo foram substituídos pelo dashboard pessoal (app.dashboard).
         self.client.force_login(self.usuario)
         resposta = self.client.get(self.url)
         self.assertEqual(resposta.status_code, 200)
         self.assertTemplateUsed(resposta, "users/painel.html")
-        self.assertContains(resposta, "Dados de exemplo")
-        self.assertContains(resposta, 'id="dados-exemplo-painel"')
+        self.assertNotContains(resposta, "Dados de exemplo")
+        self.assertContains(resposta, 'data-gohub-dashboard="/api/dashboard/pessoal/"')
         self.assertContains(resposta, "assets/js/gohub/paginas/painel.js")
-        self.assertContains(resposta, "Ana Souza")  # card "Sua conta" com dados reais
+        self.assertContains(resposta, "Ana Souza")  # card "Sua conta"
 
     def test_usuario_comum_nao_ve_atalho_do_admin(self):
         self.client.force_login(self.usuario)
@@ -603,7 +607,7 @@ class PainelTests(TestCase):
         self.assertContains(self.client.get(self.url), reverse("admin:index"))
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class PerfilTests(TestCase):
     NOVA_SENHA = "Outra-s3nha-bem-forte"
 
@@ -691,7 +695,7 @@ class PerfilTests(TestCase):
 
 
 @override_settings(
-    STORAGES=STORAGES_DE_TESTE,
+    STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="GoHub <nao-responda@exemplo.com>",
 )
@@ -792,7 +796,7 @@ class RedefinicaoDeSenhaTests(TestCase):
 
 
 @override_settings(
-    STORAGES=STORAGES_DE_TESTE,
+    STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="GoHub <nao-responda@exemplo.com>",
 )
@@ -873,7 +877,7 @@ class AuditoriaEAvisosTests(TestCase):
 
 
 @override_settings(
-    STORAGES=STORAGES_DE_TESTE,
+    STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="GoHub <nao-responda@exemplo.com>",
     PASSWORD_RESET_TIMEOUT=3600,
@@ -954,7 +958,7 @@ class UsuarioMeAPITests(APITestCase):
         self.assertEqual(self.client.get("/api/usuarios/").status_code, 404)
 
 
-@override_settings(STORAGES=STORAGES_DE_TESTE)
+@override_settings(STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE)
 class AdminVoltarAoPainelTests(TestCase):
     """O admin (Jazzmin) oferece o caminho de volta ao painel do GoHub."""
 
@@ -982,3 +986,109 @@ class AdminVoltarAoPainelTests(TestCase):
         conteudo = self.client.get(reverse("admin:login")).content.decode()
         self.assertIn("assets/css/gohub-admin.css", conteudo)
         self.assertNotIn("fonts.googleapis.com", conteudo)
+
+
+@override_settings(
+    STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE,
+    LOGIN_MAX_FALHAS_IP=6, LOGIN_MAX_FALHAS_CONTA=3, LOGIN_JANELA_SEGUNDOS=900,
+)
+class LimiteDeLoginTests(APITestCase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.usuario = criar_usuario()
+
+    def entrar(self, senha, username="admin", ip="198.51.100.1"):
+        return self.client.post(reverse("users:login"), {"username": username, "password": senha}, REMOTE_ADDR=ip)
+
+    def registros(self):
+        from .models import RegistroAcesso
+
+        return RegistroAcesso.objects.filter(usuario=self.usuario)
+
+    def test_conta_bloqueada_no_ip_recusa_ate_a_senha_certa_sem_gravar(self):
+        for _ in range(3):
+            self.entrar("errada")
+        self.assertEqual(self.registros().count(), 3)
+        with self.assertLogs("gohub.auditoria", level="INFO") as logs:
+            resposta = self.entrar(SENHA)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Muitas tentativas sem sucesso")
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertEqual(self.registros().count(), 3)  # bloqueio não grava
+        self.assertTrue(any("evento=login_bloqueado ip=198.51.100.1" in linha for linha in logs.output))
+
+    def test_bloqueio_da_conta_nao_afeta_outro_ip(self):
+        for _ in range(3):
+            self.entrar("errada", ip="198.51.100.1")
+        resposta = self.entrar(SENHA, ip="203.0.113.9")
+        self.assertRedirects(resposta, reverse("users:painel"), fetch_redirect_response=False)
+
+    def test_limite_por_ip_vale_para_qualquer_conta(self):
+        for indice in range(6):
+            self.entrar("errada", username=f"tentativa{indice}")
+        resposta = self.entrar(SENHA)
+        self.assertContains(resposta, "Muitas tentativas sem sucesso")
+
+    def test_usuario_inexistente_conta_igual(self):
+        for _ in range(3):
+            self.entrar("x", username="naoexiste")
+        self.assertContains(self.entrar("x", username="naoexiste"), "Muitas tentativas sem sucesso")
+
+    def test_sucesso_zera_a_contagem_da_conta(self):
+        for _ in range(2):
+            self.entrar("errada")
+        self.entrar(SENHA)
+        self.client.logout()
+        for _ in range(2):
+            self.entrar("errada")
+        self.assertRedirects(self.entrar(SENHA), reverse("users:painel"), fetch_redirect_response=False)
+
+    def test_basic_auth_tambem_e_limitado(self):
+        errada = "Basic " + base64.b64encode(b"admin:errada").decode()
+        certa = "Basic " + base64.b64encode(f"admin:{SENHA}".encode()).decode()
+        for _ in range(3):
+            self.client.get("/api/usuarios/me/", HTTP_AUTHORIZATION=errada, REMOTE_ADDR="198.51.100.1")
+        resposta = self.client.get("/api/usuarios/me/", HTTP_AUTHORIZATION=certa, REMOTE_ADDR="198.51.100.1")
+        self.assertEqual(resposta.status_code, 401)
+        outro_ip = self.client.get("/api/usuarios/me/", HTTP_AUTHORIZATION=certa, REMOTE_ADDR="203.0.113.9")
+        self.assertEqual(outro_ip.status_code, 200)
+
+    def test_cache_indisponivel_nao_impede_login(self):
+        from redis.exceptions import RedisError
+
+        with mock.patch("app.users.limite_login.cache") as cache_falho, self.assertLogs("gohub.auditoria", level="WARNING"):
+            cache_falho.get_many.side_effect = RedisError("fora")
+            cache_falho.add.side_effect = RedisError("fora")
+            cache_falho.delete.side_effect = RedisError("fora")
+            resposta = self.entrar(SENHA)
+        self.assertRedirects(resposta, reverse("users:painel"), fetch_redirect_response=False)
+
+
+@override_settings(
+    STORAGES=STORAGES_DE_TESTE, CACHES=CACHES_DE_TESTE,
+    LEADS_PROXY_SALTOS=1, LEADS_PROXY_CONFIAVEIS=["10.0.0.0/8"],
+)
+class IpUnificadoTests(TestCase):
+    def test_log_e_registro_usam_o_mesmo_ip_do_cliente(self):
+        from .models import RegistroAcesso
+
+        usuario = criar_usuario()
+        with self.assertLogs("gohub.auditoria", level="INFO") as logs:
+            self.client.post(
+                reverse("users:login"), {"username": "admin", "password": SENHA},
+                REMOTE_ADDR="10.0.0.5", HTTP_X_FORWARDED_FOR="1.2.3.4, 198.51.100.9",
+            )
+        self.assertEqual(RegistroAcesso.objects.get(usuario=usuario).ip, "198.51.100.9")
+        self.assertTrue(any("evento=login ip=198.51.100.9" in linha for linha in logs.output))
+
+    def test_proxy_nao_confiavel_nao_escolhe_o_ip(self):
+        from .models import RegistroAcesso
+
+        criar_usuario()
+        self.client.post(
+            reverse("users:login"), {"username": "admin", "password": SENHA},
+            REMOTE_ADDR="192.0.2.1", HTTP_X_FORWARDED_FOR="198.51.100.9",
+        )
+        self.assertEqual(RegistroAcesso.objects.get().ip, "192.0.2.1")

@@ -1,0 +1,15 @@
+{% comment %}
+    Área de gráfico desenhada pelo JS (Chart.js do tema) com os dados da API.
+    Parâmetros:
+        chave    caminho dos dados na resposta da API (ex.: graficos.evolucao)
+        tipo     linha | barras | barras-horizontais | rosca | desempenho
+        rotulo   descrição para leitores de tela (aria-label do canvas)
+        vazio    mensagem exibida quando não há registros (nunca se desenha dado inventado)
+        grande   (opcional) altura maior
+        legenda  (opcional) mostra a legenda em texto abaixo (gráficos de rosca)
+{% endcomment %}
+<div class="gohub-grafico{% if grande %} gohub-grafico--grande{% endif %}" data-gohub-grafico="{{ chave }}" data-gohub-tipo="{{ tipo }}">
+    <canvas role="img" aria-label="{{ rotulo }}"></canvas>
+    <p class="gohub-grafico__vazio text-soft" data-gohub-vazio hidden>{{ vazio }}</p>
+</div>
+{% if legenda %}<ul class="gohub-legenda mt-3" data-gohub-legenda-de="{{ chave }}"></ul>{% endif %}

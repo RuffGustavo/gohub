@@ -32,7 +32,15 @@ class LoginForm(AuthenticationForm):
         # não revela quais contas existem.
         "invalid_login": "Nome de usuário ou senha inválidos.",
         "inactive": "Nome de usuário ou senha inválidos.",
+        "bloqueado": "Muitas tentativas sem sucesso. Aguarde alguns minutos e tente de novo.",
     }
+
+    def get_invalid_login_error(self):
+        from .limite_login import foi_bloqueado
+
+        if foi_bloqueado(self.request):
+            return forms.ValidationError(self.error_messages["bloqueado"], code="bloqueado")
+        return super().get_invalid_login_error()
 
     def __init__(self, request=None, *args, **kwargs):
         super().__init__(request, *args, **kwargs)

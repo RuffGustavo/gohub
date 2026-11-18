@@ -4,7 +4,7 @@ from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group
 
 from .forms import UsuarioChangeForm, UsuarioCreationForm, UsuarioPasswordChangeForm
-from .models import Usuario
+from .models import RegistroAcesso, Usuario
 
 # Só um superusuário concede privilégios; sem isso, quem tem "change_usuario"
 # poderia se tornar superusuário ou se atribuir qualquer permissão.
@@ -92,3 +92,28 @@ class GrupoAdmin(GroupAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser and super().has_delete_permission(request, obj)
+
+
+@admin.register(RegistroAcesso)
+class RegistroAcessoAdmin(admin.ModelAdmin):
+    """Consulta do histórico de acessos (view_registroacesso). Somente leitura: os registros
+    são gravados pelos sinais de autenticação e nunca alterados nem apagados."""
+
+    list_display = ["ocorrido_em", "usuario", "status", "canal", "ip", "navegador", "dispositivo"]
+    list_filter = ["status", "canal", "dispositivo", "ocorrido_em"]
+    search_fields = ["usuario__username", "ip"]
+    list_select_related = ["usuario"]
+    date_hierarchy = "ocorrido_em"
+    readonly_fields = [
+        "usuario", "status", "canal", "ip", "navegador", "sistema_operacional", "dispositivo", "ocorrido_em",
+    ]
+    fields = readonly_fields
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

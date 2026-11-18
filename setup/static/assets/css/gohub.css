@@ -82,6 +82,53 @@ main[tabindex="-1"]:focus {
     color: var(--bs-body-color);
 }
 
+/* Indicadores (KPIs) dos dashboards: valor preenchido pelo JS, período sempre visível. */
+.gohub-kpi__valor {
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--bs-secondary);
+}
+
+.gohub-kpi__variacao,
+.gohub-kpi__periodo {
+    font-size: 0.75rem;
+}
+
+/* Área dos gráficos (Chart.js precisa de um contêiner com altura definida). */
+.gohub-grafico {
+    position: relative;
+    block-size: 14rem;
+}
+
+.gohub-grafico--grande {
+    block-size: 16rem;
+}
+
+@media (min-width: 992px) {
+    .gohub-grafico--grande {
+        block-size: 18rem;
+    }
+}
+
+/* O Chart.js grava display:block inline no canvas; sem isto o atributo hidden não esconderia. */
+.gohub-grafico canvas[hidden] {
+    display: none !important;
+}
+
+.gohub-grafico__vazio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: 100%;
+    margin: 0;
+    text-align: center;
+}
+
+.gohub-grafico__vazio[hidden] {
+    display: none;
+}
+
 /* Formulários das páginas de perfil: largura de leitura confortável em telas grandes. */
 .gohub-form-perfil {
     max-width: 32rem;
