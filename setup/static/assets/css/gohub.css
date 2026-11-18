@@ -134,6 +134,24 @@ main[tabindex="-1"]:focus {
     max-width: 32rem;
 }
 
+/* Confirmação de ação sem JavaScript (<details>): o <summary> tem visual de botão e abre o
+   formulário POST com o botão de confirmar logo abaixo. */
+.gohub-confirmacao > summary {
+    list-style: none;
+}
+
+.gohub-confirmacao > summary::-webkit-details-marker {
+    display: none;
+}
+
+.gohub-confirmacao__painel {
+    margin-block-start: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    max-inline-size: 70ch;
+}
+
 /* ==== Utilitários ==== */
 
 /* Permite usar <button> onde o tema usa <a href="#">, sem alterar a aparência. */

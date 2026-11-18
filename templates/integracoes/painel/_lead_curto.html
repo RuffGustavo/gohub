@@ -1,0 +1,5 @@
+{% comment %}
+    Lead identificado só pelo id curto (sem nome: listas de integração não exibem dados pessoais).
+    Parâmetro: lead_id (UUID). O detalhe do lead valida a permissão leads.view_lead.
+{% endcomment %}
+<a href="{% url 'leads:painel-detalhe' lead_id %}" class="text-nowrap" title="{{ lead_id }}"><code>{{ lead_id|stringformat:"s"|slice:":8" }}</code><span class="visually-hidden"> (lead {{ lead_id }})</span></a>

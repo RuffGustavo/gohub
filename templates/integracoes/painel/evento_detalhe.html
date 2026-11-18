@@ -1,0 +1,75 @@
+{% extends "layouts/painel.html" %}
+{% comment %}
+    Detalhe de um evento de integração (PainelEventoDetalheView, exige
+    integracoes.view_eventointegracao). payload exibido como tabela chave/valor e mensagem de
+    erro sempre com autoescape (dados vindos de sistema externo).
+{% endcomment %}
+
+{% block title %}Evento de integração {{ evento.pk }} | GoHub{% endblock %}
+{% block description %}Detalhes de um evento de integração: origem, tipo, resultado, datas e resumo técnico.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">Evento <code>{{ evento.tipo_evento }}</code></h1>
+                <div class="nk-block-des text-soft">
+                    <p>Recebido em <time datetime="{{ evento.recebido_em|date:'c' }}">{{ evento.recebido_em|date:"d/m/Y H:i:s" }}</time></p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="{% url 'integracoes:painel-eventos' %}?lead={{ evento.lead_id }}" class="btn btn-outline-light bg-white">
+                    <em class="icon ni ni-arrow-left" aria-hidden="true"></em><span>Eventos deste lead</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            <section class="col-lg-6" aria-labelledby="titulo-evento">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h2 class="title h6 mb-3" id="titulo-evento">Dados do evento</h2>
+                        <dl class="gohub-dados">
+                            <dt>Sistema</dt><dd>{{ evento.sistema.nome }}</dd>
+                            <dt>Resultado</dt><dd>{% include "integracoes/painel/_selo.html" with tipo="resultado" valor=evento.resultado rotulo=evento.get_resultado_display %}</dd>
+                            <dt>Lead</dt><dd>{% include "integracoes/painel/_lead_curto.html" with lead_id=evento.lead_id %}</dd>
+                            <dt>Ocorrido em</dt><dd>{{ evento.ocorrido_em|date:"d/m/Y H:i:s" }}</dd>
+                            <dt>Chave de idempotência</dt><dd><code class="text-break">{{ evento.chave_idempotencia }}</code></dd>
+                            <dt>ID externo</dt><dd>{% if evento.id_externo %}<code>{{ evento.id_externo }}</code>{% else %}—{% endif %}</dd>
+                            <dt>Mensagem de erro</dt><dd class="text-break">{{ evento.mensagem_erro|default:"—" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+            <section class="col-lg-6" aria-labelledby="titulo-payload">
+                <div class="card card-bordered h-100">
+                    <div class="card-inner">
+                        <h2 class="title h6 mb-3" id="titulo-payload">Resumo técnico</h2>
+                        {% if payload_itens %}
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <caption>Chaves e valores do resumo técnico enviado</caption>
+                                    <thead>
+                                        <tr><th scope="col">Chave</th><th scope="col">Valor</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for chave, valor in payload_itens %}
+                                            <tr>
+                                                <th scope="row" class="fw-normal"><code>{{ chave }}</code></th>
+                                                <td class="text-break">{% if valor is None %}—{% else %}{{ valor }}{% endif %}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-soft mb-0">Sem resumo técnico.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}

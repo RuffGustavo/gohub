@@ -1,0 +1,14 @@
+{% comment %}
+    Selo de status de integração ou de resultado de evento: o texto é sempre exibido (a cor é só reforço).
+    Parâmetros: valor (código), rotulo (texto), tipo ("status" ou "resultado").
+{% endcomment %}
+{% if tipo == "resultado" %}
+    {% if valor == "sucesso" %}<span class="badge badge-dim bg-success">{{ rotulo }}</span>
+    {% elif valor == "erro" %}<span class="badge badge-dim bg-danger">{{ rotulo }}</span>
+    {% else %}<span class="badge badge-dim bg-gray">{{ rotulo }}</span>{% endif %}
+{% else %}
+    {% if valor == "sucesso" %}<span class="badge badge-dim bg-success">{{ rotulo }}</span>
+    {% elif valor == "erro" %}<span class="badge badge-dim bg-danger">{{ rotulo }}</span>
+    {% elif valor == "em_andamento" %}<span class="badge badge-dim bg-info">{{ rotulo }}</span>
+    {% else %}<span class="badge badge-dim bg-warning">{{ rotulo }}</span>{% endif %}
+{% endif %}

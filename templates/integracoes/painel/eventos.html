@@ -1,0 +1,92 @@
+{% extends "layouts/painel.html" %}
+{% comment %}
+    Log de eventos de integração (PainelEventosView, exige integracoes.view_eventointegracao).
+    Lead só pelo id curto; chave truncada; payload e mensagem de erro só no detalhe.
+{% endcomment %}
+
+{% block title %}Eventos de integração | GoHub{% endblock %}
+{% block description %}Registro de chamadas e retornos das integrações, com filtros por sistema, resultado, tipo e período.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">Eventos de integração</h1>
+                <div class="nk-block-des text-soft">
+                    <p>Chamadas enviadas ao n8n e retornos recebidos, dos mais recentes para os mais antigos.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="{% url 'integracoes:painel-visao-geral' %}" class="btn btn-outline-light bg-white">
+                    <em class="icon ni ni-arrow-left" aria-hidden="true"></em><span>Visão geral</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <section class="nk-block" aria-labelledby="titulo-filtros">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h2 class="title h6 mb-3" id="titulo-filtros">Filtros</h2>
+                {% if filtro.errors %}
+                    <div class="alert alert-warning" role="alert">Alguns filtros são inválidos e foram ignorados. Confira os campos destacados.</div>
+                {% endif %}
+                <form method="get" action="{% url 'integracoes:painel-eventos' %}" novalidate>
+                    <div class="row g-3 align-end">
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.sistema tipo="select" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.resultado tipo="select" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.tipo_evento tipo="select" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.inicio tipo="date" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.fim tipo="date" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.lead maxlength=36 %}</div>
+                    </div>
+                    <p class="form-note mt-2">O período se refere à data de recebimento.</p>
+                    <ul class="align-center flex-wrap gx-3 gy-2 mt-3">
+                        <li><button type="submit" class="btn btn-primary">Filtrar</button></li>
+                        <li><a href="{% url 'integracoes:painel-eventos' %}" class="link link-light">Limpar filtros</a></li>
+                    </ul>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="nk-block" aria-labelledby="titulo-resultados">
+        <h2 class="visually-hidden" id="titulo-resultados">Resultados</h2>
+        <div class="card card-bordered">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <caption class="px-3">{{ page_obj.paginator.count }} evento(s) encontrado(s)</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Recebido em</th>
+                            <th scope="col">Ocorrido em</th>
+                            <th scope="col">Sistema</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Resultado</th>
+                            <th scope="col">Lead</th>
+                            <th scope="col">Chave</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for evento in eventos %}
+                            <tr>
+                                <th scope="row" class="fw-normal text-nowrap"><a href="{% url 'integracoes:painel-evento-detalhe' evento.pk %}"><time datetime="{{ evento.recebido_em|date:'c' }}">{{ evento.recebido_em|date:"d/m/Y H:i:s" }}</time><span class="visually-hidden"> (ver evento)</span></a></th>
+                                <td class="text-nowrap">{{ evento.ocorrido_em|date:"d/m/Y H:i:s" }}</td>
+                                <td>{{ evento.sistema.nome }}</td>
+                                <td><code>{{ evento.tipo_evento }}</code></td>
+                                <td>{% include "integracoes/painel/_selo.html" with tipo="resultado" valor=evento.resultado rotulo=evento.get_resultado_display %}</td>
+                                <td>{% include "integracoes/painel/_lead_curto.html" with lead_id=evento.lead_id %}</td>
+                                <td><code title="{{ evento.chave_idempotencia }}">{{ evento.chave_idempotencia|truncatechars:24 }}</code></td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-soft py-4">Nenhum evento encontrado com esses filtros.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% include "integracoes/painel/_paginacao.html" with rotulo="Paginação dos eventos de integração" %}
+        </div>
+    </section>
+{% endblock %}

@@ -32,11 +32,22 @@ def _politica_versao():
 
 
 def _ao_receber_lead(lead_id):
-    """Ponto de extensão (P14), chamado depois do commit de um lead novo.
+    """Ponto de extensão (P14), chamado DENTRO da transação do INSERT de um lead novo.
 
-    Sem efeito por enquanto. Quando o app "integracoes" existir, dispare aqui a task
-    Celery passando só o id: `notificar_lead_recebido.delay(str(lead_id))`.
+    Cria lead_integracao (n8n, pendente) na mesma transação (I1) e agenda o webhook para
+    depois do commit (I2). Falha do broker ou do n8n nunca reverte nem atrasa o cadastro
+    além do envio à fila: a integração fica pendente e o beat recupera (PR4).
     """
+    from app.integracoes.services import agendar_notificacao  # import tardio: evita import circular
+
+    agendar_notificacao(lead_id)
+
+
+def _ao_anonimizar_lead(lead_id):
+    """Depois do commit da anonimização: avisa o n8n para eliminar o lead no CRM (P13)."""
+    from app.integracoes.services import agendar_aviso_anonimizacao
+
+    agendar_aviso_anonimizacao(lead_id)
 
 
 def registrar_lead(*, nome, email, telefone, empresa, cargo, request=None):
@@ -56,9 +67,12 @@ def registrar_lead(*, nome, email, telefone, empresa, cargo, request=None):
         _politica_versao(),
     ]
     try:
-        with transaction.atomic(), connection.cursor() as cursor:
-            cursor.execute(_SQL_INSERIR_LEAD, valores)
-            linha = cursor.fetchone()
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(_SQL_INSERIR_LEAD, valores)
+                linha = cursor.fetchone()
+            if linha is not None:
+                _ao_receber_lead(linha[0])
     except (IntegrityError, DataError):
         # Último filtro do banco (CHECK ck_lead_*) recusou algo que a validação aceitou.
         raise ValidationError("Não foi possível registrar os dados informados.") from None
@@ -66,7 +80,6 @@ def registrar_lead(*, nome, email, telefone, empresa, cargo, request=None):
         return None, False
     lead_id = linha[0]
     # Fora de transação o on_commit roda na hora; dentro de uma (ATOMIC_REQUESTS, testes), no commit.
-    transaction.on_commit(lambda: _ao_receber_lead(lead_id))
     transaction.on_commit(lambda: registrar("lead_captado", request, lead_id=lead_id))
     return lead_id, True
 
@@ -107,6 +120,7 @@ def anonimizar_lead(*, lead, usuario, request=None):
         with transaction.atomic():
             lead.anonimizar()
             transaction.on_commit(lambda: registrar("lead_anonimizado", request, usuario, lead_id=lead.pk))
+            transaction.on_commit(lambda: _ao_anonimizar_lead(lead.pk))
     except DatabaseError:
         # fn_anonimizar_lead recusa lead inexistente ou já anonimizado.
         raise ValidationError("Este lead não existe ou já foi anonimizado.") from None

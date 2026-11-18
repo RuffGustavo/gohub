@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "app.users",
     "app.leads",
     "app.dashboard",
+    "app.integracoes",
 ]
 
 MIDDLEWARE = [
@@ -232,6 +233,21 @@ _redis_auth = f":{quote(REDIS_PASSWORD, safe='')}@" if REDIS_PASSWORD else ""
 CELERY_BROKER_URL = f"redis://{_redis_auth}{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TIMEZONE = TIME_ZONE
+# Tarefas periódicas (beat: instância única). Fila de notificações ao n8n (app.integracoes):
+# reenvio das pendentes/com erro cuja próxima tentativa venceu e liberação de tentativas travadas.
+# "expires" descarta execuções acumuladas se o worker ficar parado (a próxima rodada cobre).
+CELERY_BEAT_SCHEDULE = {
+    "integracoes-reprocessar-pendentes": {
+        "task": "app.integracoes.tasks.reprocessar_integracoes_pendentes",
+        "schedule": 60.0,
+        "options": {"expires": 55},
+    },
+    "integracoes-liberar-travadas": {
+        "task": "app.integracoes.tasks.liberar_tentativas_travadas",
+        "schedule": 300.0,
+        "options": {"expires": 290},
+    },
+}
 
 # Cache compartilhado entre os processos (mesmo Redis do Celery, em outro banco lógico).
 # Hoje só guarda os contadores do rate limit da captação pública (app.leads.throttles).
@@ -274,6 +290,13 @@ except ValueError:
     raise ImproperlyConfigured("LEADS_PROXY_CONFIAVEIS deve listar IPs ou redes CIDR separados por vírgula.") from None
 if LEADS_PROXY_SALTOS > 0 and not LEADS_PROXY_CONFIAVEIS:
     raise ImproperlyConfigured("Com LEADS_PROXY_SALTOS > 0, informe os proxies em LEADS_PROXY_CONFIAVEIS.")
+
+# Integrações (app.integracoes): webhook assinado ao n8n e API interna para o retorno.
+# Credenciais só por variável de ambiente (nunca em tabela). Validação e montagem do dicionário
+# em app/integracoes/configuracao.py; o código lê só settings.INTEGRACOES.
+from app.integracoes.configuracao import carregar as _carregar_integracoes  # noqa: E402
+
+INTEGRACOES = _carregar_integracoes(os.environ)
 
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")

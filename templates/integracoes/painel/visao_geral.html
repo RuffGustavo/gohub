@@ -1,0 +1,96 @@
+{% extends "layouts/painel.html" %}
+{% comment %}
+    Visão geral das integrações (PainelVisaoGeralView, exige integracoes.view_leadintegracao).
+    Credenciais: só "configuradas / não configuradas" (presença da variável, nunca o valor).
+    Ativar/desativar e testar: POST com CSRF e confirmação nativa (<details>), só para quem tem
+    integracoes.gerenciar_integracoes; as views revalidam a permissão.
+{% endcomment %}
+
+{% block title %}Integrações | GoHub{% endblock %}
+{% block description %}Situação das integrações com o n8n, o CRM e a nutrição: fila, erros e últimas notificações.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">Integrações</h1>
+                <div class="nk-block-des text-soft">
+                    <p>Estado das integrações por sistema e eventos das últimas 24 horas.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <ul class="align-center flex-wrap gx-3 gy-2">
+                    <li><a href="{% url 'integracoes:painel-fila' %}" class="btn btn-outline-light bg-white"><em class="icon ni ni-list" aria-hidden="true"></em><span>Fila</span></a></li>
+                    {% if perms.integracoes.view_eventointegracao %}
+                        <li><a href="{% url 'integracoes:painel-eventos' %}" class="btn btn-outline-light bg-white"><em class="icon ni ni-activity" aria-hidden="true"></em><span>Eventos</span></a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="nk-block">
+        <div class="row g-gs">
+            {% for item in sistemas %}
+                {% with sistema=item.sistema %}
+                    <section class="col-md-6 col-xxl-3" aria-labelledby="titulo-sistema-{{ sistema.pk }}">
+                        <div class="card card-bordered h-100">
+                            <div class="card-inner">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                                    <h2 class="title h6 mb-0" id="titulo-sistema-{{ sistema.pk }}">{{ sistema.nome }}</h2>
+                                    {% if sistema.ativo %}
+                                        <span class="badge badge-dim bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge badge-dim bg-gray">Inativo</span>
+                                    {% endif %}
+                                </div>
+                                <dl class="gohub-dados">
+                                    {% if sistema.codigo == codigo_n8n %}
+                                        <dt>Credenciais</dt>
+                                        <dd>{% if credenciais_configuradas %}Configuradas{% else %}Não configuradas{% endif %}</dd>
+                                        <dt>Webhook</dt>
+                                        <dd>{% if notificacao_configurada %}Configurado{% else %}Não configurado (notificações ficam pendentes){% endif %}</dd>
+                                    {% endif %}
+                                    <dt>Pendentes</dt><dd>{{ item.status.pendente }}</dd>
+                                    <dt>Em andamento</dt><dd>{{ item.status.em_andamento }}</dd>
+                                    <dt>Com erro</dt><dd>{{ item.status.erro }}</dd>
+                                    <dt>Com sucesso</dt><dd>{{ item.status.sucesso }}</dd>
+                                    <dt>Eventos em 24 h</dt>
+                                    <dd>{{ item.eventos_24h.sucesso }} com sucesso, {{ item.eventos_24h.erro }} com erro</dd>
+                                    <dt>Último sucesso</dt>
+                                    <dd>{% if item.ultimo_sucesso_em %}<time datetime="{{ item.ultimo_sucesso_em|date:'c' }}">{{ item.ultimo_sucesso_em|date:"d/m/Y H:i" }}</time>{% else %}—{% endif %}</dd>
+                                </dl>
+                                {% if pode_gerenciar %}
+                                    <div class="d-flex flex-wrap gap-2 mt-3">
+                                        {% if sistema.codigo != codigo_aplicacao_web %}
+                                            <details class="gohub-confirmacao">
+                                                <summary class="btn btn-sm btn-outline-secondary">{% if sistema.ativo %}Desativar{% else %}Ativar{% endif %}</summary>
+                                                <form method="post" action="{% url 'integracoes:painel-sistema-alternar' sistema.pk %}" class="gohub-confirmacao__painel">
+                                                    {% csrf_token %}
+                                                    <p class="mb-2">{% if sistema.ativo %}Desativar {{ sistema.nome }}? Ele deixa de autenticar e de receber notificações.{% else %}Ativar {{ sistema.nome }}?{% endif %}</p>
+                                                    <button type="submit" class="btn btn-sm {% if sistema.ativo %}btn-danger{% else %}btn-primary{% endif %}">Confirmar</button>
+                                                </form>
+                                            </details>
+                                        {% endif %}
+                                        {% if sistema.codigo == codigo_n8n %}
+                                            <details class="gohub-confirmacao">
+                                                <summary class="btn btn-sm btn-outline-primary">Testar conexão</summary>
+                                                <form method="post" action="{% url 'integracoes:painel-sistema-testar' sistema.pk %}" class="gohub-confirmacao__painel">
+                                                    {% csrf_token %}
+                                                    <p class="mb-2">Enviar um evento de teste assinado ao webhook do n8n?</p>
+                                                    <button type="submit" class="btn btn-sm btn-primary">Enviar teste</button>
+                                                </form>
+                                            </details>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
+                {% endwith %}
+            {% empty %}
+                <p class="text-soft">Nenhum sistema cadastrado.</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

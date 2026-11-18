@@ -1,0 +1,77 @@
+{% comment %}
+    Seção de integrações no detalhe do lead (P18). Incluída só quando a view define
+    pode_ver_integracoes (integracoes.view_leadintegracao). Estado por sistema e, só com
+    integracoes.view_eventointegracao (pode_ver_eventos), os últimos 20 eventos.
+{% endcomment %}
+<section class="nk-block" aria-labelledby="titulo-integracoes">
+    <div class="nk-block-between g-3 mb-3">
+        <h2 class="nk-block-title title h6 mb-0" id="titulo-integracoes">Integrações</h2>
+        {% if pode_ver_eventos %}
+            <a href="{% url 'integracoes:painel-eventos' %}?lead={{ lead.pk }}" class="link link-primary">Ver todos os eventos deste lead</a>
+        {% endif %}
+    </div>
+    <div class="card card-bordered">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <caption class="px-3">Estado da integração do lead com cada sistema</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Sistema</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Tentativas</th>
+                        <th scope="col">Última tentativa</th>
+                        <th scope="col">ID externo</th>
+                        <th scope="col">Último erro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in integracoes %}
+                        <tr>
+                            <th scope="row" class="fw-normal">{{ item.sistema.nome }}</th>
+                            <td>{% include "integracoes/painel/_selo.html" with tipo="status" valor=item.status rotulo=item.get_status_display %}</td>
+                            <td>{{ item.tentativas }}</td>
+                            <td class="text-nowrap">{{ item.ultima_tentativa_em|date:"d/m/Y H:i"|default:"—" }}</td>
+                            <td>{% if item.id_externo %}<code>{{ item.id_externo }}</code>{% else %}—{% endif %}</td>
+                            <td><code>{{ item.ultimo_erro|default:"—"|truncatechars:60 }}</code></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6" class="text-center text-soft py-4">Nenhuma integração registrada.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if pode_ver_eventos %}
+    <div class="card card-bordered mt-3">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <caption class="px-3">Últimos {{ eventos_integracao|length }} evento(s) de integração do lead</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Ocorrido em</th>
+                        <th scope="col">Sistema</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Resultado</th>
+                        <th scope="col">Mensagem de erro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in eventos_integracao %}
+                        <tr>
+                            <th scope="row" class="fw-normal text-nowrap">
+                                <a href="{% url 'integracoes:painel-evento-detalhe' evento.pk %}">{{ evento.ocorrido_em|date:"d/m/Y H:i:s" }}<span class="visually-hidden"> (ver evento)</span></a>
+                            </th>
+                            <td>{{ evento.sistema.nome }}</td>
+                            <td><code>{{ evento.tipo_evento }}</code></td>
+                            <td>{% include "integracoes/painel/_selo.html" with tipo="resultado" valor=evento.resultado rotulo=evento.get_resultado_display %}</td>
+                            <td class="text-break">{{ evento.mensagem_erro|default:"—"|truncatechars:120 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5" class="text-center text-soft py-4">Nenhum evento de integração.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</section>

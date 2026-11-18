@@ -295,8 +295,8 @@ class _RegistroImutavelQuerySet(models.QuerySet):
 class _RegistroImutavel(models.Model):
     """Base das tabelas append-only (o gatilho fn_bloquear_alteracao recusa UPDATE/DELETE).
 
-    Decisão P2: a FK evento_id (-> evento_integracao) do MER fica para uma migration do
-    futuro app "integracoes", junto com a tabela de eventos.
+    Decisão P2: a FK evento_id (-> evento_integracao) do MER entrou com o app "integracoes"
+    (migration leads.0004_evento_integracao, que depende de integracoes.0001).
     """
 
     objects = _RegistroImutavelQuerySet.as_manager()
@@ -367,6 +367,15 @@ class LeadClassificacao(_RegistroImutavel):
         db_index=False,
         verbose_name="usuário",
     )
+    evento = models.ForeignKey(
+        "integracoes.EventoIntegracao",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="classificacoes",
+        db_index=False,  # índice parcial ix_classificacao_evento
+        verbose_name="evento de integração",
+    )
     classificado_em = models.DateTimeField("classificado em", db_default=Now())
     created_at = models.DateTimeField("gravado em", db_default=Now(), editable=False)
 
@@ -408,6 +417,7 @@ class LeadClassificacao(_RegistroImutavel):
         indexes = [
             models.Index(fields=["lead", "-classificado_em"], name="ix_classificacao_lead"),
             models.Index(fields=["usuario"], condition=Q(usuario__isnull=False), name="ix_classificacao_usuario"),
+            models.Index(fields=["evento"], condition=Q(evento__isnull=False), name="ix_classificacao_evento"),
         ]
 
     def __str__(self):
@@ -456,6 +466,15 @@ class LeadStatusHistorico(_RegistroImutavel):
         db_index=False,
         verbose_name="usuário",
     )
+    evento = models.ForeignKey(
+        "integracoes.EventoIntegracao",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="historico_status",
+        db_index=False,  # índice parcial ix_status_hist_evento
+        verbose_name="evento de integração",
+    )
     observacao = models.CharField("observação", max_length=1000, null=True, blank=True)
     ocorrido_em = models.DateTimeField(
         "ocorrido em", db_default=Now(), help_text="Instante na origem (ordena eventos fora de ordem)."
@@ -489,6 +508,7 @@ class LeadStatusHistorico(_RegistroImutavel):
         indexes = [
             models.Index(fields=["lead", "-ocorrido_em"], name="ix_status_hist_lead"),
             models.Index(fields=["usuario"], condition=Q(usuario__isnull=False), name="ix_status_hist_usuario"),
+            models.Index(fields=["evento"], condition=Q(evento__isnull=False), name="ix_status_hist_evento"),
         ]
 
     def __str__(self):

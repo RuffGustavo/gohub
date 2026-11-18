@@ -1,0 +1,120 @@
+{% extends "layouts/painel.html" %}
+{% comment %}
+    Fila de integrações (PainelFilaView, exige integracoes.view_leadintegracao). Sem status
+    marcado, mostra pendente + erro. Lead só pelo id curto (sem nome). "Reprocessar" só para
+    quem tem integracoes.reprocessar_integracao (a view revalida) e só na linha do n8n (P14).
+{% endcomment %}
+
+{% block title %}Fila de integrações | GoHub{% endblock %}
+{% block description %}Integrações pendentes ou com erro, com tentativas, próximo envio e reprocessamento.{% endblock %}
+
+{% block content %}
+    <div class="nk-block-head nk-block-head-sm">
+        <div class="nk-block-between g-3">
+            <div class="nk-block-head-content">
+                <h1 class="nk-block-title page-title">Fila de integrações</h1>
+                <div class="nk-block-des text-soft">
+                    <p>Estado de cada lead em cada sistema, das atualizações mais recentes para as mais antigas.</p>
+                </div>
+            </div>
+            <div class="nk-block-head-content">
+                <a href="{% url 'integracoes:painel-visao-geral' %}" class="btn btn-outline-light bg-white">
+                    <em class="icon ni ni-arrow-left" aria-hidden="true"></em><span>Visão geral</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <section class="nk-block" aria-labelledby="titulo-filtros">
+        <div class="card card-bordered">
+            <div class="card-inner">
+                <h2 class="title h6 mb-3" id="titulo-filtros">Filtros</h2>
+                {% if filtro.errors %}
+                    <div class="alert alert-warning" role="alert">Alguns filtros são inválidos e foram ignorados. Confira os campos destacados.</div>
+                {% endif %}
+                <form method="get" action="{% url 'integracoes:painel-fila' %}" novalidate>
+                    <div class="row g-3 align-end">
+                        <div class="col-lg-4">
+                            <fieldset class="form-group">
+                                <legend class="form-label">Status</legend>
+                                <ul class="custom-control-group g-2">
+                                    {% for opcao in filtro.status %}
+                                        <li>
+                                            <div class="custom-control custom-checkbox">
+                                                <input type="checkbox" class="custom-control-input" name="{{ opcao.data.name }}" id="{{ opcao.id_for_label }}" value="{{ opcao.data.value }}"{% if opcao.data.selected %} checked{% endif %}>
+                                                <label class="custom-control-label" for="{{ opcao.id_for_label }}">{{ opcao.choice_label }}</label>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </fieldset>
+                        </div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.sistema tipo="select" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.inicio tipo="date" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.fim tipo="date" %}</div>
+                        <div class="col-sm-6 col-lg-2">{% include "leads/painel/_campo.html" with campo=filtro.lead maxlength=36 %}</div>
+                    </div>
+                    <p class="form-note mt-2">O período se refere à última tentativa.</p>
+                    <ul class="align-center flex-wrap gx-3 gy-2 mt-3">
+                        <li><button type="submit" class="btn btn-primary">Filtrar</button></li>
+                        <li><a href="{% url 'integracoes:painel-fila' %}" class="link link-light">Limpar filtros</a></li>
+                    </ul>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="nk-block" aria-labelledby="titulo-resultados">
+        <h2 class="visually-hidden" id="titulo-resultados">Resultados</h2>
+        <div class="card card-bordered">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <caption class="px-3">{{ page_obj.paginator.count }} integração(ões) encontrada(s)</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Lead</th>
+                            <th scope="col">Sistema</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Tentativas</th>
+                            <th scope="col">Última tentativa</th>
+                            <th scope="col">Próxima tentativa</th>
+                            <th scope="col">Último erro</th>
+                            <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in integracoes %}
+                            <tr>
+                                <th scope="row" class="fw-normal">{% include "integracoes/painel/_lead_curto.html" with lead_id=item.lead_id %}</th>
+                                <td>{{ item.sistema.nome }}</td>
+                                <td>{% include "integracoes/painel/_selo.html" with tipo="status" valor=item.status rotulo=item.get_status_display %}</td>
+                                <td>{{ item.tentativas }}</td>
+                                <td class="text-nowrap">{{ item.ultima_tentativa_em|date:"d/m/Y H:i"|default:"—" }}</td>
+                                <td class="text-nowrap">{{ item.proxima_tentativa_em|date:"d/m/Y H:i"|default:"—" }}</td>
+                                <td><code>{{ item.ultimo_erro|default:"—"|truncatechars:60 }}</code></td>
+                                <td class="text-end text-nowrap">
+                                    {% if pode_reprocessar %}
+                                        {% if item.sistema.codigo != codigo_n8n %}
+                                            <button type="button" class="btn btn-sm btn-outline-light" disabled>Reprocessado pelo n8n</button>
+                                        {% elif item.status == "pendente" or item.status == "erro" %}
+                                            <form method="post" action="{% url 'integracoes:painel-reprocessar' item.pk %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">Reprocessar<span class="visually-hidden"> a integração do lead {{ item.lead_id }}</span></button>
+                                            </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-soft py-4">Nenhuma integração encontrada com esses filtros.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% include "integracoes/painel/_paginacao.html" with rotulo="Paginação da fila de integrações" %}
+        </div>
+    </section>
+{% endblock %}

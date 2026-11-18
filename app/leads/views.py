@@ -115,6 +115,16 @@ class PainelLeadDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
         contexto["classificacoes"] = historico_classificacoes(self.object)
         contexto["pode_reclassificar"] = self.request.user.has_perm("leads.reclassificar_lead")
         contexto.setdefault("form_reclassificacao", ReclassificacaoForm())
+        # P18: estado por sistema e últimos eventos, só para quem pode ver integrações (2 consultas).
+        if self.request.user.has_perm("integracoes.view_leadintegracao"):
+            from app.integracoes.selectors import integracoes_do_lead  # import tardio: integracoes depende de leads
+
+            pode_ver_eventos = self.request.user.has_perm("integracoes.view_eventointegracao")
+            contexto["integracoes"], contexto["eventos_integracao"] = integracoes_do_lead(
+                self.object, com_eventos=pode_ver_eventos
+            )
+            contexto["pode_ver_integracoes"] = True
+            contexto["pode_ver_eventos"] = pode_ver_eventos
         return contexto
 
 

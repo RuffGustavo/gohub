@@ -46,6 +46,33 @@
                     </a>
                 </li>
             {% endif %}
+            {% if perms.integracoes.view_leadintegracao or perms.integracoes.view_eventointegracao %}
+                <li class="nk-menu-heading">
+                    <span class="overline-title text-primary-alt">Integrações</span>
+                </li>
+                {% if perms.integracoes.view_leadintegracao %}
+                    <li class="nk-menu-item{% if atual == 'integracoes:painel-visao-geral' %} active current-page{% endif %}">
+                        <a href="{% url 'integracoes:painel-visao-geral' %}" class="nk-menu-link"{% if atual == 'integracoes:painel-visao-geral' %} aria-current="page"{% endif %}>
+                            <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-link-group"></em></span>
+                            <span class="nk-menu-text">Visão geral</span>
+                        </a>
+                    </li>
+                    <li class="nk-menu-item{% if atual == 'integracoes:painel-fila' %} active current-page{% endif %}">
+                        <a href="{% url 'integracoes:painel-fila' %}" class="nk-menu-link"{% if atual == 'integracoes:painel-fila' %} aria-current="page"{% endif %}>
+                            <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-list-check"></em></span>
+                            <span class="nk-menu-text">Fila</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% if perms.integracoes.view_eventointegracao %}
+                    <li class="nk-menu-item{% if atual == 'integracoes:painel-eventos' or atual == 'integracoes:painel-evento-detalhe' %} active current-page{% endif %}">
+                        <a href="{% url 'integracoes:painel-eventos' %}" class="nk-menu-link"{% if atual == 'integracoes:painel-eventos' %} aria-current="page"{% endif %}>
+                            <span class="nk-menu-icon" aria-hidden="true"><em class="icon ni ni-activity"></em></span>
+                            <span class="nk-menu-text">Eventos</span>
+                        </a>
+                    </li>
+                {% endif %}
+            {% endif %}
             <li class="nk-menu-heading">
                 <span class="overline-title text-primary-alt">Minha conta</span>
             </li>

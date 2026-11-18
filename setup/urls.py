@@ -7,6 +7,7 @@ from drf_yasg import openapi
 from app.users.views import UsuarioViewSet
 from app.leads.views import LeadCapturaAPIView, LeadViewSet
 from app.dashboard.views import DashboardViewSet
+from app.integracoes.views import EventoIntegracaoViewSet, LeadEventosInternoView, LeadIntegracaoViewSet, LeadInternoView
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -24,6 +25,8 @@ router = routers.DefaultRouter()
 router.register('usuarios', UsuarioViewSet, basename='usuario')
 router.register('leads', LeadViewSet, basename='lead')
 router.register('dashboard', DashboardViewSet, basename='dashboard')
+router.register('integracoes', LeadIntegracaoViewSet, basename='integracao')
+router.register('eventos-integracao', EventoIntegracaoViewSet, basename='evento-integracao')
 
 def health_check(request):
    return JsonResponse({
@@ -36,9 +39,13 @@ urlpatterns = [
    path('', include('app.users.urls')),
    path('', include('app.leads.urls')),
    path('', include('app.dashboard.urls')),
+   path('', include('app.integracoes.urls')),
    path('health/', health_check, name='health'),
    # Antes do router: a captação pública não passa pelo LeadViewSet.
    path('api/leads/captura/', LeadCapturaAPIView.as_view(), name='lead-captura'),
+   # API interna do n8n (token + assinatura HMAC; fora do router e do Swagger).
+   path('api/interno/leads/<uuid:pk>/', LeadInternoView.as_view(), name='interno-lead'),
+   path('api/interno/leads/<uuid:pk>/eventos/', LeadEventosInternoView.as_view(), name='interno-lead-eventos'),
    path('api/', include(router.urls)),
    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc')

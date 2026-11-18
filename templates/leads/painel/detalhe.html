@@ -141,4 +141,8 @@
             </div>
         </div>
     </section>
+
+    {% if pode_ver_integracoes %}
+        {% include "integracoes/painel/_secao_lead.html" %}
+    {% endif %}
 {% endblock %}
